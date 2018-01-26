@@ -92,6 +92,14 @@ std::string request_reply(int s, std::string message)
 	return "";
 }
 
+//Strip the reply from the server and return only the code.
+int returnCode(std::string stringGet){
+	
+	std::string codeStrip = stringGet.substr(0, 3);
+	int code = std::stoi(codeStrip);
+	
+	return code;
+}
 // Enter the passive mode
 int passiveMode(int sockpiGet){
 	
@@ -135,9 +143,18 @@ void issueCmd(int sockpiGet, std::string commandGet){
 	int sockpi;
 	std::string strReply;
 	
+	//Enter passive mode and get the new sockpi
 	sockpi = passiveMode(sockpiGet);
+	//Issue the command and set strReply to whatever the server replies with
 	strReply = request_reply(sockpi, commandGet + "\r\n");
+	
+	//Debugging purposes, delete this when we are done
 	std::cout << strReply << std::endl;
+	
+	//returnCode function will strip the code from the reply from the server.
+	if (returnCode(strReply) == 150){ //If the code was 150 then it's LIST
+		strReply
+	}
 }
 int main(int argc , char *argv[])
 {
