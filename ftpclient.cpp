@@ -29,7 +29,8 @@ iResult = WSAStartup(MAKEWORD(2,2), &wsaData);
 #include <netdb.h>
 
 #define BUFFER_LENGTH 2048
-#define WAITING_TIME 1000
+//WAITING_TIME is long to compensate for the slow connection at CSULB
+#define WAITING_TIME 200000
 
 int create_connection(std::string host, int port)
 {
@@ -91,16 +92,22 @@ std::string request_reply(int s, std::string message)
 	return "";
 }
 
+// Enter the passive mode
 int passiveMode(int sockpiGet){
 	
 	int sockpi
 	std::string strReply
 	
+	//Pass in PASV and retrieve the communication from the server and set it to our strReply
 	strReply = request_reply(sockpi, "PASV\r\n");
+	
+	//This is just for debugging purposes, just checking to make sure we got the right result, remove this once we are done
 	std::cout << strReply << std::endl;
 	
-	int b1,b2,b3,b4,b5,b6;
+	//initialize our variable to grab the octets
+	int num1,num2,num3,num4,num5,num6;
 	
+	//Finding the index at where the parenthesis lies so we can isolate the octect given from the PASV
 	int openPar = strReply.find("(");
 	int closePar = strReply.find(")");
 	std::string numbers = strReply.substr(openPar+1, closePar-openPar-1);
@@ -111,17 +118,19 @@ int passiveMode(int sockpiGet){
 		std::cout <<"by name";
 	}
 	
+	//Grab the port, if it's either b5 or the b6
 	int portGet = ((b5 << 8)|b6);
 	
-	std::cout << "Port: " << port << std::endl;
+	std::cout << "Port: " << portGet << std::endl;
 
-    sockpi = create_connection("130.179.16.134", 21);
+	//Create the new connection with the port
+    	sockpi = create_connection("130.179.16.134", portGet);
 	
 	std::cout << " connection established." << sockpi << std::endl;
 	
 	return sockpi;
 }
-void command(int sockpiGet, std::string commandGet){
+void issueCmd(int sockpiGet, std::string commandGet){
 
 	int sockpi;
 	std::string strReply;
@@ -155,6 +164,7 @@ int main(int argc , char *argv[])
     
     strReply = request_reply(sockpi, "PASS asa@asas.com\r\n");
         
+	issueCmd(sockpi, "LIST");
     //TODO implement PASV, LIST, RETR. 
     // Hint: implement a function that set the SP in passive mode and accept commands.	
 	
