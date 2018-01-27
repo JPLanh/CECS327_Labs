@@ -119,14 +119,13 @@ int passiveMode(int sockpiGet){
 	int openPar = strReply.find("(");
 	int closePar = strReply.find(")");
 	std::string numbers = strReply.substr(openPar+1, closePar-openPar-1);
-	if (sscanf(numbers.c_str(), "%d, %d, %d, %d, %d", &b1, &b2, &b3, &b4, &b5, &b6) == 6){
+	if (sscanf(numbers.c_str(), "%d, %d, %d, %d, %d", &num1, &num2, &num3, &num4, &num5, &num6) == 6){
 		std::cout << "first %: " << b5 << ", second %: " << b6 << std::endl;
-	}
-	else {
+	}else {
 		std::cout <<"by name";
 	}
 	
-	//Grab the port, if it's either b5 or the b6
+	//Grab the port, if it's either b5 left shift logical by 8 or the b6
 	int portGet = ((b5 << 8)|b6);
 	
 	std::cout << "Port: " << portGet << std::endl;
@@ -152,15 +151,36 @@ void issueCmd(int sockpiGet, std::string commandGet){
 	std::cout << strReply << std::endl;
 	
 	//returnCode function will strip the code from the reply from the server.
-	if (returnCode(strReply) == 150){ //If the code was 150 then it's LIST
-		strReply
+	if (returnCode(strReply) == 150){ //If the code was 150 then it's LIST or retrieve
+		//Request a reply without needing to send any sort of command
+		strReply = reply(sockpi);
+		
+		//For debugging purposes, we might need to delete this when we're done
+		std::cout << strReply << std::endl;
+		//If the command was RETR we need to do more stuff, if it's list we just list it out
+		if (commandGet.substr(0, 4).compare("RETR") == 0){
+			//initialize the output stream
+			std::ofstream file;
+			//Grab the file name
+			file.open(commandGet.substr(5, commandGet.length()));
+			file << strReply;
+			file.close();
+		}
+		//Close socket since we are done for this turn
+		close(sockpi);
+		strReply = reply(sockpi);
+		
+		//Debugging purposes, just to see
+		std::cout << strReply  << std::endl;		
 	}
 }
 int main(int argc , char *argv[])
 {
     int sockpi;
     std::string strReply;
-    
+    int inputGet = 0;
+    bool flag = true;
+	
     //TODO  arg[1] can be a dns or an IP address.
     if (argc > 2)
         sockpi = create_connection(argv[1], atoi(argv[2]));
@@ -181,9 +201,31 @@ int main(int argc , char *argv[])
     
     strReply = request_reply(sockpi, "PASS asa@asas.com\r\n");
         
-	issueCmd(sockpi, "LIST");
     //TODO implement PASV, LIST, RETR. 
     // Hint: implement a function that set the SP in passive mode and accept commands.	
 	
-    return 0;
+	while(flag){
+		std::cin >> inputGet;
+		//data validfication
+		if (std::cin.fail()){
+			std::cin.clear();
+			std::cin.ignore();
+			inputGet = -1;
+		}
+		
+		if (inputGet == -1){ //If the user select a invalid number
+			std::cout << "Please enter a valid input value.\" << std::endl;
+		} else if (inputGet == 1){ //If the user select 1 which is LIST
+			issueCmd(sockpi, "LIST");	
+		} else if (inputGet == 2){ //If the user select 2 which is RETR
+			issueCmd(sockpi, "RETR " + fileGet);	
+		} else if (inputGet == 3){ //If the user select 4 which is quit
+			flag = false;
+		}
+	}
+		
+	strReply = request_reply(sockpi, "QUIT");
+    	std::cout << strReply  << std::endl;	
+    
+	return 0;
 }
