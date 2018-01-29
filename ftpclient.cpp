@@ -32,6 +32,11 @@ iResult = WSAStartup(MAKEWORD(2,2), &wsaData);
 //WAITING_TIME is long to compensate for the slow connection at CSULB
 #define WAITING_TIME 200000
 
+/*
+* Method use to connect the user to a server, which was created by our instructor
+* @Hostname: The name of the host
+* @Port: the port that is needed to connect to the host
+*/
 int create_connection(std::string host, int port)
 {
     int s;
@@ -63,11 +68,20 @@ int create_connection(std::string host, int port)
     return s;
 }
 
+/*
+* send a message to the host
+* @socket: the an endpoint of a two way communication
+* @message: the message to send to the host, normally followed by /r/n
+*/
 int request(int sock, std::string message)
 {
     return send(sock, message.c_str(), message.size(), 0);
 }
 
+/*
+* Retrieve a reply from the host
+* @s: ????
+*/
 std::string reply(int s)
 {
     std::string strReply;
@@ -83,6 +97,11 @@ std::string reply(int s)
     return strReply;
 }
 
+/*
+*Send a request to the host and recieve it's message, technically combining two method into one
+* @socket: the socket that is being in focus
+* @message: the message that is needed to be sent
+*/
 std::string request_reply(int s, std::string message)
 {
 	if (request(s, message) > 0)
@@ -91,16 +110,10 @@ std::string request_reply(int s, std::string message)
 	}
 	return "";
 }
-
-//Strip the reply from the server and return only the code.
-int returnCode(std::string stringGet){
-	
-	std::string codeStrip = stringGet.substr(0, 3);
-	int code = std::stoi(codeStrip);
-	
-	return code;
-}
-// Enter the passive mode
+/*
+ *Enter the passive mode
+ *@sockpiGet: the socket to act upon on.
+ */
 int passiveMode(int sockpiGet){
 	
 	int sockpi
@@ -137,6 +150,11 @@ int passiveMode(int sockpiGet){
 	
 	return sockpi;
 }
+/*
+* Allow the user to communicate between the client and server
+*@sockpiGet: The socket which we're acting upon on
+*@commandGet: the command that is sent to the server acting upon the socket
+*/
 void issueCmd(int sockpiGet, std::string commandGet){
 
 	int sockpi;
@@ -151,7 +169,7 @@ void issueCmd(int sockpiGet, std::string commandGet){
 	std::cout << strReply << std::endl;
 	
 	//returnCode function will strip the code from the reply from the server.
-	if (returnCode(strReply) == 150){ //If the code was 150 then it's LIST or retrieve
+	if (std::stoi(strReply.substr(0, 3)) == 150){ //If the code was 150 then it's LIST or retrieve
 		//Request a reply without needing to send any sort of command
 		strReply = reply(sockpi);
 		
