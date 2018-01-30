@@ -116,8 +116,8 @@ std::string request_reply(int s, std::string message)
  */
 int passiveMode(int sockpiGet){
 	
-	int sockpi
-	std::string strReply
+    int sockpi;
+    std::string strReply;
 	
 	//Pass in PASV and retrieve the communication from the server and set it to our strReply
 	strReply = request_reply(sockpi, "PASV\r\n");
