@@ -141,7 +141,7 @@ int passiveMode(int sockpiGet){
 	}
 	
 	//Grab the port, if it's either port1 left shift logical by 8 or the just pick the second port
-	int portGet = ((num5 << 8)|num6);
+	int portGet = ((port1 << 8)|port2);
 	
 	std::cout << "Port: " << portGet << std::endl;
 
