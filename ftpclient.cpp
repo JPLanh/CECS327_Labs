@@ -126,7 +126,7 @@ int passiveMode(int sockpiGet){
 	std::cout << strReply << std::endl;
 	
 	//initialize our variable to grab the octets
-	int num1,num2,num3,num4,num5,num6;
+	int A,B,C,D,port1,port2;
 	
 	//Finding the index at where the parenthesis lies so we can isolate the octect given from the PASV
 	int openPar = strReply.find("(");
@@ -134,16 +134,14 @@ int passiveMode(int sockpiGet){
 	std::string numbers = strReply.substr(openPar+1, closePar-openPar-1);
 	//sscanf takes information from the string, in this case numbers, and place them into variables. 
 	//Instead of being able to String.split() just like java
-	int lengthCheck = sscanf(numbers.c_str(), "%d, %d, %d, %d, %d, %d", &num1, &num2, &num3, &num4, &num5, &num6);
+	int lengthCheck = sscanf(numbers.c_str(), "%d, %d, %d, %d, %d, %d", &A, &B, &C, &D, &port1, &port2);
 	//Data validity
 	if (lengthCheck == 6){
-		std::cout << "first %: " << b5 << ", second %: " << b6 << std::endl;
-	}else {
-		std::cout <<"by name";
+		std::cout << "Port 1 (" << port1 << ") Port 2 (" << port2 << ")" << std::endl;
 	}
 	
-	//Grab the port, if it's either b5 left shift logical by 8 or the b6
-	int portGet = ((b5 << 8)|b6);
+	//Grab the port, if it's either port1 left shift logical by 8 or the just pick the second port
+	int portGet = ((num5 << 8)|num6);
 	
 	std::cout << "Port: " << portGet << std::endl;
 
