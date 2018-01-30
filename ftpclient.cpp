@@ -146,7 +146,7 @@ int passiveMode(int sockpiGet){
 	std::cout << "Port: " << portGet << std::endl;
 
 	//Create the new connection with the port
-	std::string compileIP = num1 + "." + num2 + "." + num3 + "." + num4;
+	std::string compileIP = A + "." + B + "." + C + "." + D;
     	sockpi = create_connection(compileIP, portGet);
 	
 	std::cout << " connection established." << sockpi << std::endl;
