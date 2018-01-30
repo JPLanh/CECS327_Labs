@@ -132,7 +132,11 @@ int passiveMode(int sockpiGet){
 	int openPar = strReply.find("(");
 	int closePar = strReply.find(")");
 	std::string numbers = strReply.substr(openPar+1, closePar-openPar-1);
-	if (sscanf(numbers.c_str(), "%d, %d, %d, %d, %d", &num1, &num2, &num3, &num4, &num5, &num6) == 6){
+	//sscanf takes information from the string, in this case numbers, and place them into variables. 
+	//Instead of being able to String.split() just like java
+	int lengthCheck = sscanf(numbers.c_str(), "%d, %d, %d, %d, %d, %d", &num1, &num2, &num3, &num4, &num5, &num6);
+	//Data validity
+	if (lengthCheck == 6){
 		std::cout << "first %: " << b5 << ", second %: " << b6 << std::endl;
 	}else {
 		std::cout <<"by name";
@@ -144,7 +148,8 @@ int passiveMode(int sockpiGet){
 	std::cout << "Port: " << portGet << std::endl;
 
 	//Create the new connection with the port
-    	sockpi = create_connection("130.179.16.134", portGet);
+	std::string compileIP = num1 + "." + num2 + "." + num3 + "." + num4;
+    	sockpi = create_connection(compileIP, portGet);
 	
 	std::cout << " connection established." << sockpi << std::endl;
 	
