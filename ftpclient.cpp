@@ -26,6 +26,7 @@ iResult = WSAStartup(MAKEWORD(2,2), &wsaData);
 #include <netinet/in.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <fstream>
 #include <netdb.h>
 
 #define BUFFER_LENGTH 2048
@@ -146,7 +147,7 @@ int passiveMode(int sockpiGet){
 	std::cout << "Port: " << portGet << std::endl;
 
 	//Create the new connection with the port
-	std::string compileIP = A + "." + B + "." + C + "." + D;
+    std::string compileIP = "" + std::to_string(A) + "." + std::to_string(B) + "." + std::to_string(C) + "." + std::to_string(D);
     	sockpi = create_connection(compileIP, portGet);
 	
 	std::cout << " connection established." << sockpi << std::endl;
@@ -181,7 +182,7 @@ void issueCmd(int sockpiGet, std::string commandGet){
 		//If the command was RETR we need to do more stuff, if it's list we just list it out
 		if (commandGet.substr(0, 4).compare("RETR") == 0){
 			//initialize the output stream
-			std::ofstream file;
+            std::ofstream file;
 			//Grab the file name
 			file.open(commandGet.substr(5, commandGet.length()));
 			file << strReply;
@@ -235,11 +236,11 @@ int main(int argc , char *argv[])
 		}
 		
 		if (inputGet == -1){ //If the user select a invalid number
-			std::cout << "Please enter a valid input value.\" << std::endl;
+			std::cout << "Please enter a valid input value." << std::endl;
 		} else if (inputGet == 1){ //If the user select 1 which is LIST
 			issueCmd(sockpi, "LIST");	
 		} else if (inputGet == 2){ //If the user select 2 which is RETR
-			issueCmd(sockpi, "RETR " + fileGet);	
+			issueCmd(sockpi, "RETR "/* + fileGet*/);
 		} else if (inputGet == 3){ //If the user select 4 which is quit
 			flag = false;
 		}
