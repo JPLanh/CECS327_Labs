@@ -163,17 +163,17 @@ int passiveMode(int sockpiGet){
 void issueCmd(int sockpiGet, std::string commandGet){
 
 	int sockpi;
+    
 	std::string strReply;
 	
 	//Enter passive mode and get the new sockpi
 	sockpi = passiveMode(sockpiGet);
     
-    std::cout << "sockpi: " << sockpi << "commandGet: " << commandGet << std::endl;
 	//Issue the command and set strReply to whatever the server replies with
-	strReply = request_reply(sockpi, commandGet);
+	strReply = request_reply(sockpiGet, commandGet + "\r\n");
 	
 	//Debugging purposes, delete this when we are done
-	std::cout << "str " << strReply << std::endl;
+	//std::cout << "str " << strReply << std::endl;
 	
 	//returnCode function will strip the code from the reply from the server.
 	if (std::stoi(strReply.substr(0, 3)) == 150){ //If the code was 150 then it's LIST or retrieve
@@ -241,9 +241,10 @@ int main(int argc , char *argv[])
 		if (inputGet == -1){ //If the user select a invalid number
 			std::cout << "Please enter a valid input value." << std::endl;
 		} else if (inputGet == 1){ //If the user select 1 which is LIST
-			issueCmd(sockpi, "LIST");	
+			issueCmd(sockpi, "LIST");
 		} else if (inputGet == 2){ //If the user select 2 which is RETR
-			issueCmd(sockpi, "RETR "/* + fileGet*/);
+            
+            issueCmd(sockpi, "RETR "/* + fileGet*/);
 		} else if (inputGet == 3){ //If the user select 4 which is quit
 			flag = false;
 		}
