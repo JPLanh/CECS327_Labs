@@ -28,7 +28,6 @@ iResult = WSAStartup(MAKEWORD(2,2), &wsaData);
 #include <unistd.h>
 #include <fstream>
 #include <netdb.h>
-#include <cctype>
 
 #define BUFFER_LENGTH 2048
 //WAITING_TIME is long to compensate for the slow connection at CSULB
@@ -194,8 +193,9 @@ void issueCmd(int sockpiGet, std::string commandGet){
 		}
 		//Close socket since we are done for this turn
 		close(sockpi);
-		strReply = reply(sockpi);
+        strReply = reply(sockpiGet);
 		
+        
 		//Debugging purposes, just to see
 		std::cout << strReply  << std::endl;		
 	}
@@ -204,7 +204,8 @@ int main(int argc , char *argv[])
 {
     int sockpi;
     std::string strReply;
-    int inputGet = 0;
+    //int inputGet = 0;
+    std::string inputGet = "";
     bool flag = true;
 	
     //TODO  arg[1] can be a dns or an IP address.
@@ -230,32 +231,59 @@ int main(int argc , char *argv[])
     //TODO implement PASV, LIST, RETR. 
     // Hint: implement a function that set the SP in passive mode and accept commands.	
 	
-	    while(flag){
-    	fail:	getline(std::cin, inputGet);
-    		//data validfication
-    		bool dataVerify = true;
-    		for(int i = 0; i < inputGet.length() && dataVerify; i++){
-    			if(isalpha(inputGet[i])){
-    				continue;
-    			}if(inputGet[i] == ' '){
-    				continue;
-    			}
-    			dataVerify = false;
-    		}
-
-    		if (dataVerify == false){ //If the user select a invalid number
-    			std::cout << "Please enter a valid input value." << std::endl;
-    			goto fail;
-    		} else if (inputGet == "ls"){ //If the user select 1 which is LIST
-    			issueCmd(sockpi, "LIST");
-    		} else if (inputGet.substr(0,3) == "get"){ //If the user select 2 which is RETR
-    			int fileNamePos = inputGet.find(" ");
-    			std::cout << inputGet.substr(fileNamePos+1, 50);
-    			issueCmd(sockpi, "RETR "/* + fileGet*/);
-    		} else if (inputGet == "quit"){ //If the user select 4 which is quit
-    			flag = false;
-    		}
-    	}
+//	while(flag){
+//		std::cin >> inputGet;
+//		//data validfication
+//		if (std::cin.fail()){
+//			std::cin.clear();
+//			std::cin.ignore();
+//			inputGet = "ERROR";
+//		}
+//		
+//		if (inputGet.compare("LIST") == 0 ){ //If the user select 1 which is LIST
+//			issueCmd(sockpi, "LIST");
+//		} else if (inputGet.compare("RETR") == 0 ){ //If the user select 2 which is RETR
+//            std::string fileGet = "";
+//            std:: cout << "Enter a file: " << std::endl;
+//            std:: cin >> fileGet;
+//            issueCmd(sockpi, "RETR " + fileGet);
+//		} else if (inputGet.compare("QUIT") == 0 ){ //If the user select 4 which is quit
+//			flag = false;
+//        } else { //If the user select a invalid option
+//            std::cout << "Please enter a valid input phrase." << std::endl;
+//        }
+//	}
+    
+    
+    while(flag){
+    fail:	getline(std::cin, inputGet);
+        //data validfication
+        bool dataVerify = true;
+        for(int i = 0; i < inputGet.length() && dataVerify; i++){
+            if(isalpha(inputGet[i])){
+                continue;
+            }if(inputGet[i] == ' '){
+                continue;
+            }if(inputGet[i] == '.'){
+                continue;
+            }
+            dataVerify = false;
+        }
+        
+        if (dataVerify == false){ //If the user select a invalid number
+            std::cout << "Please enter a valid input value." << std::endl;
+            goto fail;
+        } else if (inputGet == "ls"){ //If the user select 1 which is LIST
+            issueCmd(sockpi, "LIST");
+        } else if (inputGet.substr(0,3) == "get"){ //If the user select 2 which is RETR
+            int fileNamePos = inputGet.find(" ");
+            std::cout << "output: " << fileNamePos << std::endl;
+            std::cout << "output: " << inputGet.substr(fileNamePos+1, 50) << std::endl;
+            issueCmd(sockpi, "RETR "/* + fileGet*/);
+        } else if (inputGet == "quit"){ //If the user select 4 which is quit
+            flag = false;
+        }
+    }
 		
 	strReply = request_reply(sockpi, "QUIT");
     	std::cout << strReply  << std::endl;	
