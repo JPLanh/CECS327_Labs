@@ -31,7 +31,7 @@ iResult = WSAStartup(MAKEWORD(2,2), &wsaData);
 
 #define BUFFER_LENGTH 2048
 //WAITING_TIME is long to compensate for the slow connection at CSULB
-#define WAITING_TIME 200000
+#define WAITING_TIME 100000
 
 /*
 * Method use to connect the user to a server, which was created by our instructor
@@ -121,7 +121,7 @@ int passiveMode(int sockpiGet){
     std::string strReply;
 	
 	//Pass in PASV and retrieve the communication from the server and set it to our strReply
-	strReply = request_reply(sockpi, "PASV\r\n");
+	strReply = request_reply(sockpiGet, "PASV\r\n");
 	
 	//This is just for debugging purposes, just checking to make sure we got the right result, remove this once we are done
 	std::cout << strReply << std::endl;
@@ -133,7 +133,7 @@ int passiveMode(int sockpiGet){
 	int openPar = strReply.find("(");
 	int closePar = strReply.find(")");
 	std::string numbers = strReply.substr(openPar+1, closePar-openPar-1);
-	//sscanf takes information from the string, in this case numbers, and place them into variables. 
+	//sscanf takes information from the string, in this case numbers, and place them into variables.
 	//Instead of being able to String.split() just like java
 	int lengthCheck = sscanf(numbers.c_str(), "%d, %d, %d, %d, %d, %d", &A, &B, &C, &D, &port1, &port2);
 	//Data validity
@@ -147,7 +147,8 @@ int passiveMode(int sockpiGet){
 	std::cout << "Port: " << portGet << std::endl;
 
 	//Create the new connection with the port
-    std::string compileIP = "" + std::to_string(A) + "." + std::to_string(B) + "." + std::to_string(C) + "." + std::to_string(D);
+    std::string compileIP = std::to_string(A) + "." + std::to_string(B) + "." + std::to_string(C) + "." + std::to_string(D);
+    std::cout << compileIP << std::endl;
     	sockpi = create_connection(compileIP, portGet);
 	
 	std::cout << " connection established." << sockpi << std::endl;
@@ -166,11 +167,13 @@ void issueCmd(int sockpiGet, std::string commandGet){
 	
 	//Enter passive mode and get the new sockpi
 	sockpi = passiveMode(sockpiGet);
+    
+    std::cout << "sockpi: " << sockpi << "commandGet: " << commandGet << std::endl;
 	//Issue the command and set strReply to whatever the server replies with
-	strReply = request_reply(sockpi, commandGet + "\r\n");
+	strReply = request_reply(sockpi, commandGet);
 	
 	//Debugging purposes, delete this when we are done
-	std::cout << strReply << std::endl;
+	std::cout << "str " << strReply << std::endl;
 	
 	//returnCode function will strip the code from the reply from the server.
 	if (std::stoi(strReply.substr(0, 3)) == 150){ //If the code was 150 then it's LIST or retrieve
