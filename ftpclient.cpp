@@ -28,6 +28,7 @@ iResult = WSAStartup(MAKEWORD(2,2), &wsaData);
 #include <unistd.h>
 #include <fstream>
 #include <netdb.h>
+#include <cctype>
 
 #define BUFFER_LENGTH 2048
 //WAITING_TIME is long to compensate for the slow connection at CSULB
@@ -229,26 +230,32 @@ int main(int argc , char *argv[])
     //TODO implement PASV, LIST, RETR. 
     // Hint: implement a function that set the SP in passive mode and accept commands.	
 	
-	while(flag){
-		std::cin >> inputGet;
-		//data validfication
-		if (std::cin.fail()){
-			std::cin.clear();
-			std::cin.ignore();
-			inputGet = -1;
-		}
-		
-		if (inputGet == -1){ //If the user select a invalid number
-			std::cout << "Please enter a valid input value." << std::endl;
-		} else if (inputGet == 1){ //If the user select 1 which is LIST
-			issueCmd(sockpi, "LIST");
-		} else if (inputGet == 2){ //If the user select 2 which is RETR
-            
-            issueCmd(sockpi, "RETR "/* + fileGet*/);
-		} else if (inputGet == 3){ //If the user select 4 which is quit
-			flag = false;
-		}
-	}
+	    while(flag){
+    	fail:	getline(std::cin, inputGet);
+    		//data validfication
+    		bool dataVerify = true;
+    		for(int i = 0; i < inputGet.length() && dataVerify; i++){
+    			if(isalpha(inputGet[i])){
+    				continue;
+    			}if(inputGet[i] == ' '){
+    				continue;
+    			}
+    			dataVerify = false;
+    		}
+
+    		if (dataVerify == false){ //If the user select a invalid number
+    			std::cout << "Please enter a valid input value." << std::endl;
+    			goto fail;
+    		} else if (inputGet == "ls"){ //If the user select 1 which is LIST
+    			issueCmd(sockpi, "LIST");
+    		} else if (inputGet.substr(0,3) == "get"){ //If the user select 2 which is RETR
+    			int fileNamePos = inputGet.find(" ");
+    			std::cout << inputGet.substr(fileNamePos+1, 50);
+    			issueCmd(sockpi, "RETR "/* + fileGet*/);
+    		} else if (inputGet == "quit"){ //If the user select 4 which is quit
+    			flag = false;
+    		}
+    	}
 		
 	strReply = request_reply(sockpi, "QUIT");
     	std::cout << strReply  << std::endl;	
