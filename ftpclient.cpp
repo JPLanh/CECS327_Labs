@@ -31,7 +31,7 @@ iResult = WSAStartup(MAKEWORD(2,2), &wsaData);
 
 #define BUFFER_LENGTH 2048
 //WAITING_TIME is long to compensate for the slow connection at CSULB
-#define WAITING_TIME 100000
+#define WAITING_TIME 200000
 
 /*
 * Method use to connect the user to a server, which was created by our instructor
@@ -147,8 +147,8 @@ int passiveMode(int sockpiGet){
 	std::cout << "Port: " << portGet << std::endl;
 
 	//Create the new connection with the port
-    std::string compileIP = std::to_string(A) + "." + std::to_string(B) + "." + std::to_string(C) + "." + std::to_string(D);
-    std::cout << compileIP << std::endl;
+    	std::string compileIP = std::to_string(A) + "." + std::to_string(B) + "." + std::to_string(C) + "." + std::to_string(D);
+    //std::cout << compileIP << std::endl;
     	sockpi = create_connection(compileIP, portGet);
 	
 	std::cout << " connection established." << sockpi << std::endl;
@@ -204,7 +204,6 @@ int main(int argc , char *argv[])
 {
     int sockpi;
     std::string strReply;
-    //int inputGet = 0;
     std::string inputGet = "";
     bool flag = true;
 	
@@ -216,16 +215,13 @@ int main(int argc , char *argv[])
     else
         sockpi = create_connection("130.179.16.134", 21);
     strReply = reply(sockpi);
-    std::cout << strReply  << std::endl;
-    
-    
+        
     strReply = request_reply(sockpi, "USER anonymous\r\n");
     //TODO parse srtReply to obtain the status. 
 	// Let the system act according to the status and display
     // friendly message to the user 
 	// You can see the ouput using std::cout << strReply  << std::endl;
-    
-    
+        
     strReply = request_reply(sockpi, "PASS asa@asas.com\r\n");
         
     //TODO implement PASV, LIST, RETR. 
@@ -256,7 +252,8 @@ int main(int argc , char *argv[])
     
     
     while(flag){
-    fail:	getline(std::cin, inputGet);
+    fail:	
+	getline(std::cin, inputGet);
         //data validfication
         bool dataVerify = true;
         for(int i = 0; i < inputGet.length() && dataVerify; i++){
@@ -273,9 +270,9 @@ int main(int argc , char *argv[])
         if (dataVerify == false){ //If the user select a invalid number
             std::cout << "Please enter a valid input value." << std::endl;
             goto fail;
-        } else if (inputGet == "ls"){ //If the user select 1 which is LIST
+        } else if (inputGet == "ls"){ //If the user input ls, which will suppose to display the entire list of files
             issueCmd(sockpi, "LIST");
-        } else if (inputGet.substr(0,3) == "get"){ //If the user select 2 which is RETR
+        } else if (inputGet.substr(0,3) == "get"){ //If the user input is get, it will prompt the user for the file to get
             int fileNamePos = inputGet.find(" ");
             std::cout << "output: " << fileNamePos << std::endl;
             std::cout << "output: " << inputGet.substr(fileNamePos+1, 50) << std::endl;
