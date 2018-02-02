@@ -31,7 +31,7 @@ iResult = WSAStartup(MAKEWORD(2,2), &wsaData);
 
 #define BUFFER_LENGTH 2048
 //WAITING_TIME is long to compensate for the slow connection at CSULB
-#define WAITING_TIME 200000
+#define WAITING_TIME 500000
 
 /*
 * Method use to connect the user to a server, which was created by our instructor
@@ -51,11 +51,11 @@ int create_connection(std::string host, int port)
     int a1,a2,a3,a4;
     if (sscanf(host.c_str(), "%d.%d.%d.%d", &a1, &a2, &a3, &a4 ) == 4)
     {
-        std::cout << "by ip";
+        //std::cout << "by ip";
         socketAddress.sin_addr.s_addr =  inet_addr(host.c_str());
     }
     else {
-        std::cout << "by name";
+        //std::cout << "by name";
         hostent *record = gethostbyname(host.c_str());
         in_addr *addressptr = (in_addr *)record->h_addr;
         socketAddress.sin_addr = *addressptr;
@@ -124,7 +124,7 @@ int passiveMode(int sockpiGet){
 	strReply = request_reply(sockpiGet, "PASV\r\n");
 	
 	//This is just for debugging purposes, just checking to make sure we got the right result, remove this once we are done
-	std::cout << strReply << std::endl;
+	//std::cout << strReply << std::endl;
 	
 	//initialize our variable to grab the octets
 	int A,B,C,D,port1,port2;
@@ -137,21 +137,21 @@ int passiveMode(int sockpiGet){
 	//Instead of being able to String.split() just like java
 	int lengthCheck = sscanf(numbers.c_str(), "%d, %d, %d, %d, %d, %d", &A, &B, &C, &D, &port1, &port2);
 	//Data validity
-	if (lengthCheck == 6){
-		std::cout << "Port 1 (" << port1 << ") Port 2 (" << port2 << ")" << std::endl;
-	}
+	//if (lengthCheck == 6){
+		//std::cout << "Port 1 (" << port1 << ") Port 2 (" << port2 << ")" << std::endl;
+	//}
 	
 	//Grab the port, if it's either port1 left shift logical by 8 or the just pick the second port
 	int portGet = ((port1 << 8)|port2);
 	
-	std::cout << "Port: " << portGet << std::endl;
+	//std::cout << "Port: " << portGet << std::endl;
 
 	//Create the new connection with the port
     	std::string compileIP = std::to_string(A) + "." + std::to_string(B) + "." + std::to_string(C) + "." + std::to_string(D);
     //std::cout << compileIP << std::endl;
     	sockpi = create_connection(compileIP, portGet);
 	
-	std::cout << " connection established." << sockpi << std::endl;
+	//std::cout << " connection established." << sockpi << std::endl;
 	
 	return sockpi;
 }
@@ -165,33 +165,34 @@ void issueCmd(int sockpiGet, std::string commandGet){
 	int sockpi;
     
 	std::string strReply;
-    
 	
 	//Enter passive mode and get the new sockpi
 	sockpi = passiveMode(sockpiGet);
-    
+    	
 	//Issue the command and set strReply to whatever the server replies with
 	strReply = request_reply(sockpiGet, commandGet + "\r\n");
-	
+	std::cout << strReply.substr(4, strReply.length()) << std::endl;
 	//Debugging purposes, delete this when we are done
-	//std::cout << "str " << strReply << std::endl;
+	
 	
 	//returnCode function will strip the code from the reply from the server.
 	if (std::stoi(strReply.substr(0, 3)) == 150){ //If the code was 150 then it's LIST or retrieve
 		//Request a reply without needing to send any sort of command
 		strReply = reply(sockpi);
 		
+		if(commandGet.substr(0, 4).compare("LIST") == 0){
 		//For debugging purposes, we might need to delete this when we're done
-		std::cout << strReply << std::endl;
+			std::cout << strReply << std::endl;
+		}
 		//If the command was RETR we need to do more stuff, if it's list we just list it out
 		if (commandGet.substr(0, 4).compare("RETR") == 0){
-            
 			//initialize the output stream
             std::ofstream file;
 			//Grab the file name
 			file.open(commandGet.substr(5, commandGet.length()));
 			file << strReply;
 			file.close();
+			std::cout<< commandGet.substr(5, commandGet.length()) << " retrieved" << std::endl;
 		}
 		//Close socket since we are done for this turn
 		close(sockpi);
@@ -199,7 +200,14 @@ void issueCmd(int sockpiGet, std::string commandGet){
 		
         
 		//Debugging purposes, just to see
-		std::cout << strReply  << std::endl;		
+		//std::cout << strReply  << std::endl;		
+	} else if (std::stoi(strReply.substr(0, 3)) == 221){
+		std::cout << "Goodbye" << std::endl;
+	} else if (std::stoi(strReply.substr(0, 3)) == 250){
+		issueCmd(sockpiGet, "PWD");
+	}else if (std::stoi(strReply.substr(0, 3)) == 550){
+		std::cout << "Directory is not found." << std::endl;
+		issueCmd(sockpiGet, "PWD");
 	}
 }
 int main(int argc , char *argv[])
@@ -225,39 +233,14 @@ int main(int argc , char *argv[])
 	// You can see the ouput using std::cout << strReply  << std::endl;
         
     strReply = request_reply(sockpi, "PASS asa@asas.com\r\n");
-    std::cout << "test" << std::endl;
-    
-    
+        
     //TODO implement PASV, LIST, RETR. 
     // Hint: implement a function that set the SP in passive mode and accept commands.	
-	
-//	while(flag){
-//		std::cin >> inputGet;
-//		//data validfication
-//		if (std::cin.fail()){
-//			std::cin.clear();
-//			std::cin.ignore();
-//			inputGet = "ERROR";
-//		}
-//		
-//		if (inputGet.compare("LIST") == 0 ){ //If the user select 1 which is LIST
-//			issueCmd(sockpi, "LIST");
-//		} else if (inputGet.compare("RETR") == 0 ){ //If the user select 2 which is RETR
-//            std::string fileGet = "";
-//            std:: cout << "Enter a file: " << std::endl;
-//            std:: cin >> fileGet;
-//            issueCmd(sockpi, "RETR " + fileGet);
-//		} else if (inputGet.compare("QUIT") == 0 ){ //If the user select 4 which is quit
-//			flag = false;
-//        } else { //If the user select a invalid option
-//            std::cout << "Please enter a valid input phrase." << std::endl;
-//        }
-//	}
     
     
     while(flag){
     fail:
-        std::cout << "Enter something: " << std::endl;
+	std::cout << "Please enter ls, get ___, cd ___, or quit" << std::endl;
 	getline(std::cin, inputGet);
         //data validfication
         bool dataVerify = true;
@@ -268,10 +251,16 @@ int main(int argc , char *argv[])
                 continue;
             }if(inputGet[i] == '.'){
                 continue;
+            }if(inputGet[i] == '/'){
+                continue;
+            }if(inputGet[i] == '-'){
+                continue;
+            }if(inputGet[i] == '_'){
+                continue;
             }
             dataVerify = false;
         }
-        std::cout << inputGet << std::endl;
+        
         if (dataVerify == false){ //If the user select a invalid number
             std::cout << "Please enter a valid input value." << std::endl;
             goto fail;
@@ -279,16 +268,21 @@ int main(int argc , char *argv[])
             issueCmd(sockpi, "LIST");
         } else if (inputGet.substr(0,3) == "get"){ //If the user input is get, it will prompt the user for the file to get
             int fileNamePos = inputGet.find(" ");
-            std::cout << "output: " << fileNamePos << std::endl;
-            std::cout << "output: " << inputGet.substr(fileNamePos+1, 50) << std::endl;
+            //std::cout << "output: " << fileNamePos << std::endl;
+            //std::cout << "output: " << inputGet.substr(fileNamePos+1, 50) << std::endl;
             issueCmd(sockpi, "RETR " + inputGet.substr(fileNamePos+1, 50));
-        } else if (inputGet == "quit"){ //If the user select 4 which is quit
+        }else if (inputGet.substr(0,2) == "cd"){
+	int fileNamePos = inputGet.find(" "); 
+	issueCmd(sockpi, "CWD " + inputGet.substr(fileNamePos+1, 50));
+	}else if (inputGet == "quit"){ //If the user select 4 which is quit
             flag = false;
+		issueCmd(sockpi, "QUIT");
+		return 0;
         }
     }
 		
-	strReply = request_reply(sockpi, "QUIT");
+	
     	std::cout << strReply  << std::endl;	
     
-	return 0;
+
 }
