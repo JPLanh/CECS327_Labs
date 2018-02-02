@@ -165,6 +165,7 @@ void issueCmd(int sockpiGet, std::string commandGet){
 	int sockpi;
     
 	std::string strReply;
+    
 	
 	//Enter passive mode and get the new sockpi
 	sockpi = passiveMode(sockpiGet);
@@ -184,6 +185,7 @@ void issueCmd(int sockpiGet, std::string commandGet){
 		std::cout << strReply << std::endl;
 		//If the command was RETR we need to do more stuff, if it's list we just list it out
 		if (commandGet.substr(0, 4).compare("RETR") == 0){
+            
 			//initialize the output stream
             std::ofstream file;
 			//Grab the file name
@@ -223,7 +225,9 @@ int main(int argc , char *argv[])
 	// You can see the ouput using std::cout << strReply  << std::endl;
         
     strReply = request_reply(sockpi, "PASS asa@asas.com\r\n");
-        
+    std::cout << "test" << std::endl;
+    
+    
     //TODO implement PASV, LIST, RETR. 
     // Hint: implement a function that set the SP in passive mode and accept commands.	
 	
@@ -252,7 +256,8 @@ int main(int argc , char *argv[])
     
     
     while(flag){
-    fail:	
+    fail:
+        std::cout << "Enter something: " << std::endl;
 	getline(std::cin, inputGet);
         //data validfication
         bool dataVerify = true;
@@ -266,7 +271,7 @@ int main(int argc , char *argv[])
             }
             dataVerify = false;
         }
-        
+        std::cout << inputGet << std::endl;
         if (dataVerify == false){ //If the user select a invalid number
             std::cout << "Please enter a valid input value." << std::endl;
             goto fail;
@@ -276,7 +281,7 @@ int main(int argc , char *argv[])
             int fileNamePos = inputGet.find(" ");
             std::cout << "output: " << fileNamePos << std::endl;
             std::cout << "output: " << inputGet.substr(fileNamePos+1, 50) << std::endl;
-            issueCmd(sockpi, "RETR "/* + fileGet*/);
+            issueCmd(sockpi, "RETR " + inputGet.substr(fileNamePos+1, 50));
         } else if (inputGet == "quit"){ //If the user select 4 which is quit
             flag = false;
         }
