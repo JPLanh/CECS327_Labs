@@ -144,9 +144,9 @@ int passiveMode(int sockpiGet){
 	std::string numbers = strReply.substr(openPar+1, closePar-openPar-1);
 	
 	if (DEBUG == 1) {
-		std::cout << "{}> Index of the open parenthesis: " << openPar << endl;
-		std::cout << "{}> Index of the closed parenthesis: " << closePar << endl;
-		std::cout << "{}> numbers isolated: " << numbers << endl;
+		std::cout << "{}> Index of the open parenthesis: " << openPar << std::endl;
+		std::cout << "{}> Index of the closed parenthesis: " << closePar << std::endl;
+		std::cout << "{}> numbers isolated: " << numbers << std::endl;
 	}
 	
 	//Instead of being able to String.split() just like java
@@ -154,7 +154,7 @@ int passiveMode(int sockpiGet){
 	int lengthCheck = sscanf(numbers.c_str(), "%d, %d, %d, %d, %d, %d", &A, &B, &C, &D, &port1, &port2);
 
 	if (DEBUG == 1) {
-		std::cout << "{}> IP: " << A << "." << B << "." << C << "." << D << endl;
+		std::cout << "{}> IP: " << A << "." << B << "." << C << "." << D << std::endl;
 		std::cout << "{}> Port 1 (" << port1 << ") Port 2 (" << port2 << ")" << std::endl;
 	}
 	
@@ -197,8 +197,14 @@ void issueCmd(int sockpiGet, std::string commandGet){
 		
 		//Getting the 150 code does not determine if LIST of RETR was passed, so here we are determing which one it is.
 		if(commandGet.substr(0, 4).compare("LIST") == 0){
-			//Print out the list of files
-			std::cout << strReply << std::endl;
+			//checks if the folder is empty or not
+			if(strReply.compare("") == 0){
+				//prints out that the folder is empty
+				std::cout << "The folder is empty" << std::endl;
+			}else{
+				//Print out the list of files if it is not empty
+				std::cout << strReply << std::endl;
+			}
 		}
 		if (commandGet.substr(0, 4).compare("RETR") == 0){
 			//initialize the output stream
@@ -262,7 +268,7 @@ int main(int argc , char *argv[])
         bool dataVerify = true;
 	//Make sure all character input follows an invalid input
         for(int i = 0; i < inputGet.length() && dataVerify; i++){
-            if(isalpha(inputGet[i])){
+            if(isalnum(inputGet[i])){
                 continue;
             }if(inputGet[i] == ' '){
                 continue;
