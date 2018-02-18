@@ -235,11 +235,13 @@ void recv_joining(uint8_t *payload)
     if (payload[LEFT_ID] == mydata->my_id)
     {
     	mydata->my_right = payload[SENDER];
+		mydata->state = COOPERATIVE;
     }
     //if sender set me as right, set sender as my left
     if (payload[RIGHT_ID] == mydata->my_id)
     {
 	    mydata->my_left = payload[SENDER];
+		mdata->state = COOPERATIVE;
     }
 
 
@@ -250,11 +252,39 @@ void recv_joining(uint8_t *payload)
 		mydata->red = 3;
         mydata->master = 1;
     }
+	if(mydata->state == COOPERATIVE){
+		mydata->red = 3;
+	} else {
+		mydata->red = 0;
+	}
 #ifdef SIMULATOR
     printf("%d Left: %d Right: %d\n", mydata->my_id, mydata->my_left, mydata->my_right);
 #endif
 }
 
+void recv_election(uint8_t *payload){
+	if (payload[ID] == mydata->my_left){
+		if (payload[MASTER] < mydata->m){
+			mydata->m = payload[MASTER];
+			mydata->master = 0;
+			mydata->red = 1;
+			mydata->blue = 0;
+			mydata->green = 0;
+			mydata->send_token = 1;
+		} else if (payload[MASTER] > mydata->m){
+			mydata->red = 1;
+			mydata->blue = 0;
+			mydata->green = 0;
+			mydata->send_token = 1;
+		} else if (mydata->my_id == payload[MASTER]){
+			mydata->master = 1;
+			mydata->red = 1;
+			mydata->blue = 1;
+			mydata->green = 1;
+			mydata->send_token = 1;
+		}
+	}
+}
 void recv_move(uint8_t *payload)
 {
 #ifdef SIMULATOR
@@ -306,21 +336,11 @@ void message_rx(message_t *m, distance_measurement_t *d)
                 recv_move(m->data);
                 break;
             case ELECTION:
-                if(data[ID] == mydata[LEFT])
-                    receive_election();
-                break;
-            case ELECTED:
-                if(data[ID] == mydata[LEFT])
-                    //blah
+                recv_election(m_.data);
                 break;
         
         }
     }
-}
-
-receive_election(){
-    //algorithm in the pdf
-    // to forward we set the initiator to true
 }
 
 char enqueue_message(uint8_t m)
@@ -328,6 +348,13 @@ char enqueue_message(uint8_t m)
 #ifdef SIMULATOR
  //   printf("%d, Prepare %d\n", mydata->my_id, m);
 #endif
+
+    if(m == ELECTION){
+		data[min_id] = mid_id;
+	}else{
+			
+	}
+	
     if (!isQueueFull())
     {
         mydata->message[mydata->tail].data[MSG] = m;
@@ -357,14 +384,7 @@ void send_joining()
 {
     uint8_t i;
     /* precondition  */
-    
-    if(guard)
-    {
-        EnqueueMSG(JOIN);
-        mydata -> initiator = true;
         
-    }
-    
     if (mydata->state == AUTONOMOUS && is_stabilized()  && !isQueueFull())
 
     {
@@ -377,6 +397,7 @@ void send_joining()
             mydata->state = COOPERATIVE;
             mydata->my_right = mydata->nearest_neighbors[i].right_id;
             mydata->my_left = mydata->nearest_neighbors[i].id;
+			mydata->initiator = true;
             enqueue_message(JOIN);
 #ifdef SIMULATOR
             printf("Sending Joining %d right=%d left=%d\n", mydata->my_id, mydata->my_right, mydata->my_left);
@@ -511,21 +532,12 @@ void remove_neighbor(nearest_neighbor_t lost)
     mydata->num_neighbors--;
 }
 
-EnqueueMSG(msg)
+void send_election()
 {
-    if(msg == ELECTION)
-        data[MINID] = midID;
-    else{
-        
-    }
-}
-
-Send_election()
-{
-    if(initiator && !isQueueFull() && state == COOPERATIVE)
+    if(mydata->initiator && !isQueueFull() && mydata->state == COOPERATIVE)
     {
-        EnqueueMSG(ELECTION); //define ELECTION
-        initiator = false;
+		enqueue_message(ELECTION);
+        mydata->send_token = 1;
     }
 }
 
@@ -536,6 +548,7 @@ void loop()
     //send_move();
     send_joining();
     send_sharing();
+	send_election();
     move(mydata->now);
 
     Send_election()
@@ -552,6 +565,7 @@ void loop()
         }
     } 
 
+	/*
     // Master bot color switching
     if (mydata->red == 3)
     {
@@ -569,6 +583,7 @@ void loop()
             mydata->green = 0;
         }
     }
+	*/
     
     set_color(RGB(mydata->red, mydata->green, mydata->blue));
 
