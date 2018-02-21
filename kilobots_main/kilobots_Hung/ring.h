@@ -34,7 +34,9 @@ typedef enum { NULL_MSG,
     SHARE,
     JOIN,
     LEAVE,
-    MOVE
+    MOVE,
+    ELECTION,
+    ELECTED
 } message_type;  // MESSAGES
 
 typedef enum {
@@ -79,7 +81,6 @@ typedef struct
     uint8_t my_left;
     message_t message[QUEUE];
     message_t nullmessage;
-
     robot_state state;
     
     uint8_t num_neighbors;
@@ -103,7 +104,7 @@ typedef struct
     
     uint8_t loneliness;
 
-    bool initiator;
+    uint8_t initiator;
     
     
 } USERDATA;
