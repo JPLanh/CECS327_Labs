@@ -298,7 +298,6 @@ void message_rx(message_t *m, distance_measurement_t *d)
         switch (m->data[MSG])
         {
             case JOIN:
-		//printf("test");
                 recv_joining(m->data);
                 break;
             case MOVE:
@@ -406,13 +405,11 @@ void recv_election(uint8_t *payload){
 		mydata->red = 1;
 		mydata->blue = 0;
 		mydata->green = 0;
-		mydata->pass_election = 1;
 	} else if (payload[MASTER] > mydata->my_id){ //If the leader id is greater than the ID
 		mydata->red = 1;
 		mydata->blue = 1;
 		mydata->green = 1;
 		mydata->master = 1;
-		mydata->pass_election = 1;
 	} else if (mydata->my_id == payload[MASTER]){ //Will stop the message passing
 		mydata->pass_election = 0;
 	}
@@ -478,7 +475,7 @@ void send_joining()
             mydata->my_right = mydata->nearest_neighbors[i].right_id;
             mydata->my_left = mydata->nearest_neighbors[i].id;
             enqueue_message(JOIN);
-			mydate->pass_election = 1;
+  	    mydate->pass_election = 1;
 #ifdef SIMULATOR
             printf("Sending Joining %d right=%d left=%d\n", mydata->my_id, mydata->my_right, mydata->my_left);
 #endif
