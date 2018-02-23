@@ -387,14 +387,14 @@ void recv_joining(uint8_t *payload)
     // Also boolean switch for master
     if (mydata->my_left == mydata->my_right && mydata->my_id < payload[SENDER])
     {
-		mydata->red = 1;
+		//mydata->red = 1;
         mydata->master = mydata->my_id;
     }
-	if(mydata->state == COOPERATIVE){
+	/*if(mydata->state == COOPERATIVE){
 		mydata->red = 1;
 	} else {
 		mydata->red = 0;
-	}
+	}*/
 #ifdef SIMULATOR
     printf("%d Left: %d Right: %d\n", mydata->my_id, mydata->my_left, mydata->my_right);
 #endif
@@ -406,7 +406,7 @@ void recv_election(uint8_t *payload){
 	printf("my id = %d\n", mydata->my_id);
 	printf("master id = %d\n", payload[MASTER]);
 	
-	
+
 	if (payload[MASTER] < mydata->my_id){ //If the leader id is less than the ID
 		printf("test1\n");
 		//mydata->master = 0;
@@ -415,9 +415,9 @@ void recv_election(uint8_t *payload){
 		mydata->green = 0;
 	} else if (payload[MASTER] > mydata->my_id){ //If the leader id is greater than the ID
 		printf("test2\n");
-		mydata->red = 1;
+		mydata->red = 0;
 		mydata->blue = 1;
-		mydata->green = 1;
+		mydata->green = 0;
 		mydata->master = mydata->my_id;
 	} else if (mydata->my_id == payload[MASTER]){ //Will stop the message passing
 		printf("test3\n");
