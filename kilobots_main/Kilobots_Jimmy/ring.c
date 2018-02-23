@@ -9,7 +9,7 @@
 	Once a new kilobot join the group, it will run an election trying to elect a new
 	leader.
 */
-#define SIMULATOR
+//#define SIMULATOR
 
 
 #ifndef SIMULATOR
@@ -26,6 +26,9 @@
     REGISTER_USERDATA(USERDATA)
 #endif
 
+void recv_sharing(uint8_t *payload, uint8_t distance);
+void recv_joining(uint8_t *payload);
+void recv_election(uint8_t *payload);
 
 /********************************/
 /*       Utility Function       */
@@ -184,6 +187,25 @@ uint8_t get_nearest_two_neighbors()
 }
 
 
+/*This functions works to reset the bots when they 
+ have broken the ring
+  */ 
+void reset_self()
+{
+
+    //printf("%d RESET\n", mydata->my_id);
+    
+    mydata->state = AUTONOMOUS;
+    mydata->my_left = mydata->my_right = mydata->my_id;
+    mydata->num_neighbors = 0;
+    
+    mydata->red = 0;
+    mydata->green = 0;
+    mydata->blue = 0;
+    
+    mydata->master = mydata->my_id;
+}
+
 /*This function is called when message_recv_delay is > than X time
 Specific to ring
  */
@@ -224,25 +246,6 @@ void remove_neighbor(nearest_neighbor_t lost)
     mydata->num_neighbors--;
 }
 
-
-/*This functions works to reset the bots when they 
- have broken the ring
-  */ 
-void reset_self()
-{
-
-    //printf("%d RESET\n", mydata->my_id);
-    
-    mydata->state = AUTONOMOUS;
-    mydata->my_left = mydata->my_right = mydata->my_id;
-    mydata->num_neighbors = 0;
-    
-    mydata->red = 0;
-    mydata->green = 0;
-    mydata->blue = 0;
-    
-    mydata->master = 0;
-}
 
 /* Passes the message onto the next node, which is the tail of the current node
  */
@@ -301,7 +304,7 @@ void message_rx(message_t *m, distance_measurement_t *d)
                 recv_joining(m->data);
                 break;
             case MOVE:
-                recv_move(m->data);
+                //recv_move(m->data);
                 break;
             case ELECTION:
                 recv_election(m->data);
@@ -379,19 +382,19 @@ void recv_joining(uint8_t *payload)
     }
 
 
-	/*
+	
     // Creates a "master" bot upon ring creation. 
     // Also boolean switch for master
     if (mydata->my_left == mydata->my_right && mydata->my_id < payload[SENDER])
     {
-		mydata->red = 3;
-        mydata->master = 1;
+		mydata->red = 1;
+        mydata->master = mydata->my_id;
     }
 	if(mydata->state == COOPERATIVE){
-		mydata->red = 3;
+		mydata->red = 1;
 	} else {
 		mydata->red = 0;
-	}*/
+	}
 #ifdef SIMULATOR
     printf("%d Left: %d Right: %d\n", mydata->my_id, mydata->my_left, mydata->my_right);
 #endif
@@ -400,18 +403,28 @@ void recv_joining(uint8_t *payload)
 /* When the bot acknowledges it's position within the group
  */
 void recv_election(uint8_t *payload){
-	if (payload[MASTER] < mydata->my_id){ //If the leader id is less than the ID
-		mydata->master = 0;
+	printf("my id = %d\n", mydata->my_id);
+	printf("master id = %d\n", payload[MASTER]);
+	
+	
+	if (payload[MASTER] < mydata->master){ //If the leader id is less than the ID
+		printf("test1\n");
+		mydata->master = payload[MASTER];
 		mydata->red = 1;
 		mydata->blue = 0;
 		mydata->green = 0;
 	} else if (payload[MASTER] > mydata->my_id){ //If the leader id is greater than the ID
+		printf("test2\n");
+		mydata->red = 1;
+		mydata->blue = 0;
+		mydata->green = 0;
+		mydata->master = mydata->my_id;
+	} else if (mydata->my_id == payload[MASTER]){ //Will stop the message passing
+		printf("test3\n");
+		mydata->pass_election = 0;
 		mydata->red = 1;
 		mydata->blue = 1;
 		mydata->green = 1;
-		mydata->master = 1;
-	} else if (mydata->my_id == payload[MASTER]){ //Will stop the message passing
-		mydata->pass_election = 0;
 	}
 }
 
@@ -447,10 +460,12 @@ void message_tx_success() {
             mydata->head++;
             mydata->copies = 0;
             mydata->head = mydata->head % QUEUE;
+			mydata->message_sent = 1;
         }
         else
         {
             mydata->copies++;
+			mydata->message_sent = 1;
         }
     }
 }
@@ -465,17 +480,17 @@ void send_joining()
     if (mydata->state == AUTONOMOUS && is_stabilized()  && !isQueueFull())
 
     {
-
         i = get_nearest_two_neighbors();
+	
         if (i < mydata->num_neighbors && mydata->message_sent == 1)
         {
             // effect:
-
+		printf("test\n");
             mydata->state = COOPERATIVE;
             mydata->my_right = mydata->nearest_neighbors[i].right_id;
             mydata->my_left = mydata->nearest_neighbors[i].id;
             enqueue_message(JOIN);
-  	    mydate->pass_election = 1;
+			mydata->pass_election = 1;
 #ifdef SIMULATOR
             printf("Sending Joining %d right=%d left=%d\n", mydata->my_id, mydata->my_right, mydata->my_left);
 #endif
@@ -501,7 +516,7 @@ void send_sharing()
  */
 void send_election()
 {
-    if(mydata->pass_election == 1 && !isQueueFull() && mydata->state == COOPERATIVE)
+    if(mydata->message_sent == 1 && !isQueueFull() && mydata->state == COOPERATIVE)
     {
 		enqueue_message(ELECTION);
         mydata->pass_election = 0;
@@ -517,10 +532,11 @@ void send_election()
  */
 void loop()
 {
-    delay(30);
+    delay(5);
     send_joining();
-    send_sharing();
 	send_election();
+    send_sharing();
+
     
     uint8_t i;
     for (i = 0; i < mydata->num_neighbors; i++)
@@ -562,7 +578,7 @@ void setup() {
     mydata->motion_state = STOP;
     mydata->time_active = 0;
     mydata->move_state = 0;
-    mydata->master = 0;  //Set Master to 0
+    mydata->master = mydata->my_id;  //Set Master to 0
     mydata->move_motion[0].motion = LEFT;
     mydata->move_motion[0].motion = 3;
     mydata->move_motion[1].motion = RIGHT;
@@ -574,6 +590,7 @@ void setup() {
     mydata->blue = 0,
     mydata->send_token = 0;
 	mydata->pass_election = 0;
+	mydata->master = mydata->my_id;
 
     mydata->nullmessage.data[MSG] = NULL_MSG;
     mydata->nullmessage.crc = message_crc(&mydata->nullmessage);
