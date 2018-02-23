@@ -1,4 +1,15 @@
-#define SIMULATOR
+/**
+	Creators: Bryson Sherman
+			  Hung Mach
+			  Jimmy Lanh
+		  
+	Due Date: 3/1/2018
+	
+    C++ program using kilobot to elect a leader
+	Once a new kilobot join the group, it will run an election trying to elect a new
+	leader.
+*/
+//#define SIMULATOR
 
 
 #ifndef SIMULATOR
@@ -15,15 +26,20 @@
     REGISTER_USERDATA(USERDATA)
 #endif
 
+void recv_sharing(uint8_t *payload, uint8_t distance);
+void recv_joining(uint8_t *payload);
+void recv_election(uint8_t *payload);
 
+/********************************/
+/*       Utility Function       */
+/********************************/
 
+/* Function that will test to see if the queue of mydata is full
+ */
 char isQueueFull()
 {
     return (mydata->tail +1) % QUEUE == mydata->head;
 }
-
-
-
 
 /* Helper function for setting motor speed smoothly
  */
@@ -46,7 +62,8 @@ void smooth_set_motors(uint8_t ccw, uint8_t cw)
     set_motors(ccw, cw);
 }
 
-
+/* Function that will controls the movement of the kilobots
+ */
 void set_motion(motion_t new_motion)
 {
     switch(new_motion) {
@@ -65,7 +82,8 @@ void set_motion(motion_t new_motion)
     }
 }
 
-
+/* Test method to check if the distance is not farther than 90 units
+ */
 char in_interval(uint8_t distance)
 {
     //if (distance >= 40 && distance <= 60)
@@ -74,7 +92,8 @@ char in_interval(uint8_t distance)
     return 0;
 }
 
-//
+/* No clue, probably to test to make sure it's not acting crazy?
+ */
 char is_stabilized()
 {
     uint8_t i=0,j=0;
@@ -89,7 +108,8 @@ char is_stabilized()
     return j == mydata->num_neighbors;
 }
 
-// Search for id in the neighboring nodes
+/* Search for id in the neighboring nodes
+ */
 uint8_t exists_nearest_neighbor(uint8_t id)
 {
     uint8_t i;
@@ -102,7 +122,8 @@ uint8_t exists_nearest_neighbor(uint8_t id)
 }
 
 
-// Search for id in the neighboring nodes
+/* Search for id in the neighboring nodes
+ */
 uint8_t are_all_cooperative()
 {
     uint8_t i;
@@ -114,6 +135,8 @@ uint8_t are_all_cooperative()
     return 1;
 }
 
+/* Find the two nearest node to the node that is being focused on
+ */
 uint8_t get_nearest_two_neighbors()
 {
     uint8_t i, l, k;
@@ -163,24 +186,136 @@ uint8_t get_nearest_two_neighbors()
     return i;
 }
 
-void update_color(uint8_t *payload)
+
+/*This functions works to reset the bots when they 
+ have broken the ring
+  */ 
+void reset_self()
 {
-    if (mydata->master == 0)
+
+    //printf("%d RESET\n", mydata->my_id);
+    
+    mydata->state = AUTONOMOUS;
+    mydata->my_left = mydata->my_right = mydata->my_id;
+    mydata->num_neighbors = 0;
+    
+    mydata->red = 0;
+    mydata->green = 0;
+    mydata->blue = 0;
+    
+    mydata->master = mydata->my_id;
+}
+
+/*This function is called when message_recv_delay is > than X time
+Specific to ring
+ */
+void remove_neighbor(nearest_neighbor_t lost)
+{
+    uint8_t lost_bot_index;
+    lost_bot_index = exists_nearest_neighbor(lost.id);
+    
+    if (lost.id == mydata->my_right)
     {
-    	if (payload[SENDER] == mydata->my_right)
-    	{
-    		if (payload[COLOR] == (RGB(0,3,0)))
-    		{
-    			mydata->green = 3;
-    		}
-    		else
-    		{
-    			mydata->green = 0;
-    		}
-    	}
+        if (exists_nearest_neighbor(lost.right_id) < mydata->num_neighbors)
+        {
+            mydata->my_right = lost.right_id;
+            if (lost.is_master == 1)
+            {
+                mydata->master = 1;
+            }
+        }
+        else
+        {
+            reset_self();
+            return;
+        }
+    }
+    if (lost.id == mydata->my_left)
+    {
+        if (exists_nearest_neighbor(lost.left_id) < mydata->num_neighbors)
+        {
+            mydata->my_left = lost.left_id;
+        }
+        else
+        {
+            reset_self();
+            return;
+        }
+    }
+    mydata->nearest_neighbors[lost_bot_index] = mydata->nearest_neighbors[mydata->num_neighbors-1];    
+    mydata->num_neighbors--;
+}
+
+
+/* Passes the message onto the next node, which is the tail of the current node
+ */
+char enqueue_message(uint8_t m)
+{
+#ifdef SIMULATOR
+ //   printf("%d, Prepare %d\n", mydata->my_id, m);
+#endif
+
+	
+    if (!isQueueFull())
+    {
+        mydata->message[mydata->tail].data[MSG] = m;
+        mydata->message[mydata->tail].data[ID] = mydata->my_id;
+        mydata->message[mydata->tail].data[RIGHT_ID] = mydata->my_right;
+        mydata->message[mydata->tail].data[LEFT_ID] = mydata->my_left;
+        mydata->message[mydata->tail].data[RECEIVER] = mydata->my_right;
+        mydata->message[mydata->tail].data[SENDER] = mydata->my_id;
+        mydata->message[mydata->tail].data[STATE] = mydata->state;
+        //Sending Color Data 
+		mydata->message[mydata->tail].data[COLOR] = RGB(mydata->red,mydata->green,mydata->blue);
+        //Sending Master Statues 
+        mydata->message[mydata->tail].data[MASTER] = mydata->master;
+    
+        mydata->message[mydata->tail].type = NORMAL;
+        mydata->message[mydata->tail].crc = message_crc(&mydata->message[mydata->tail]);
+		mydata->message_sent = 1;
+        mydata->tail++;
+        mydata->tail = mydata->tail % QUEUE;
+        return 1;
+    }
+    return 0;
+}
+
+/********************************/
+/*       Recieve Function       */
+/********************************/
+
+/* When a node recieves a message from another node
+ */
+void message_rx(message_t *m, distance_measurement_t *d)
+{
+    uint8_t dist = estimate_distance(d);
+    
+    if (m->type == NORMAL && m->data[MSG] !=NULL_MSG)
+    {
+        
+#ifdef SIMULATOR
+        //printf("%d Receives %d %d\n", mydata->my_id,  m->data[MSG], m->data[RECEIVER]);
+#endif
+   
+        recv_sharing(m->data, dist);
+        switch (m->data[MSG])
+        {
+            case JOIN:
+                recv_joining(m->data);
+                break;
+            case MOVE:
+                //recv_move(m->data);
+                break;
+            case ELECTION:
+                recv_election(m->data);
+                break;
+        
+        }
     }
 }
 
+/* not sure what sharing would do in particular
+ */
 void recv_sharing(uint8_t *payload, uint8_t distance)
 {
     if (payload[ID] == mydata->my_id  || payload[ID] == 0 || !in_interval(distance) ) return;
@@ -221,10 +356,12 @@ void recv_sharing(uint8_t *payload, uint8_t distance)
     }
 
 	//printf("%d color code %d\n", payload[SENDER], RGB(0,3,0)); 
-	update_color(payload);
+	//update_color(payload);
 
 }
 
+/* Acknowledges when a bot has joined the group
+ */
 void recv_joining(uint8_t *payload)
 {
     //ignoring irrelevant messages
@@ -241,19 +378,20 @@ void recv_joining(uint8_t *payload)
     if (payload[RIGHT_ID] == mydata->my_id)
     {
 	    mydata->my_left = payload[SENDER];
-		mdata->state = COOPERATIVE;
+		mydata->state = COOPERATIVE;
     }
 
 
+	
     // Creates a "master" bot upon ring creation. 
     // Also boolean switch for master
     if (mydata->my_left == mydata->my_right && mydata->my_id < payload[SENDER])
     {
-		mydata->red = 3;
-        mydata->master = 1;
+		mydata->red = 1;
+        mydata->master = mydata->my_id;
     }
 	if(mydata->state == COOPERATIVE){
-		mydata->red = 3;
+		mydata->red = 1;
 	} else {
 		mydata->red = 0;
 	}
@@ -262,341 +400,39 @@ void recv_joining(uint8_t *payload)
 #endif
 }
 
+/* When the bot acknowledges it's position within the group
+ */
 void recv_election(uint8_t *payload){
-	if (payload[ID] == mydata->my_left){
-		if (payload[MASTER] < mydata->m){
-			mydata->m = payload[MASTER];
-			mydata->master = 0;
-			mydata->red = 1;
-			mydata->blue = 0;
-			mydata->green = 0;
-			mydata->send_token = 1;
-		} else if (payload[MASTER] > mydata->m){
-			mydata->red = 1;
-			mydata->blue = 0;
-			mydata->green = 0;
-			mydata->send_token = 1;
-		} else if (mydata->my_id == payload[MASTER]){
-			mydata->master = 1;
-			mydata->red = 1;
-			mydata->blue = 1;
-			mydata->green = 1;
-			mydata->send_token = 1;
-		}
-	}
-}
-void recv_move(uint8_t *payload)
-{
-#ifdef SIMULATOR
-    //printf("%d Receives move %d %d %d\n", mydata->my_id, payload[MSG], mydata->my_id, payload[RECEIVER]);
-#endif
-    
-    if (mydata->my_id == payload[RECEIVER])
-    {
-        mydata->token  = 1;
-        mydata->blue  = 1;
-        mydata->send_token = mydata->now + TOKEN_TIME * 4.0;
-
-    }
-   /* else if (my_id == payload[SENDER])
-    {
-        mydata->motion_state = STOP;
-    }
-    else
-    {
-        mydata->msg.data[MSG]      = payload[MSG];
-        mydata->msg.data[ID]       = mydata->my_id;
-        mydata->msg.data[RECEIVER] = payload[RECEIVER];
-        mydata->msg.data[SENDER]   = payload[SENDER];
-        mydata->msg.type           = NORMAL;
-        mydata->msg.crc            = message_crc(&msg);
-        mydata->message_sent       = 0;
-    } */
-}
-
-
-void message_rx(message_t *m, distance_measurement_t *d)
-{
-    uint8_t dist = estimate_distance(d);
-    
-    if (m->type == NORMAL && m->data[MSG] !=NULL_MSG)
-    {
-        
-#ifdef SIMULATOR
-        //printf("%d Receives %d %d\n", mydata->my_id,  m->data[MSG], m->data[RECEIVER]);
-#endif
-   
-        recv_sharing(m->data, dist);
-        switch (m->data[MSG])
-        {
-            case JOIN:
-                recv_joining(m->data);
-                break;
-            case MOVE:
-                recv_move(m->data);
-                break;
-            case ELECTION:
-                recv_election(m_.data);
-                break;
-        
-        }
-    }
-}
-
-char enqueue_message(uint8_t m)
-{
-#ifdef SIMULATOR
- //   printf("%d, Prepare %d\n", mydata->my_id, m);
-#endif
-
-    if(m == ELECTION){
-		data[min_id] = mid_id;
-	}else{
-			
-	}
+	printf("my id = %d\n", mydata->my_id);
+	printf("master id = %d\n", payload[MASTER]);
 	
-    if (!isQueueFull())
-    {
-        mydata->message[mydata->tail].data[MSG] = m;
-        mydata->message[mydata->tail].data[ID] = mydata->my_id;
-        mydata->message[mydata->tail].data[RIGHT_ID] = mydata->my_right;
-        mydata->message[mydata->tail].data[LEFT_ID] = mydata->my_left;
-        mydata->message[mydata->tail].data[RECEIVER] = mydata->my_right;
-        mydata->message[mydata->tail].data[SENDER] = mydata->my_id;
-        mydata->message[mydata->tail].data[STATE] = mydata->state;
-        //Sending Color Data 
-		mydata->message[mydata->tail].data[COLOR] = RGB(mydata->red,mydata->green,mydata->blue);
-        //Sending Master Statues 
-        mydata->message[mydata->tail].data[MASTER] = mydata->master;
-    
-        mydata->message[mydata->tail].type = NORMAL;
-        mydata->message[mydata->tail].crc = message_crc(&mydata->message[mydata->tail]);
-        mydata->tail++;
-        mydata->tail = mydata->tail % QUEUE;
-        return 1;
-    }
-    return 0;
+	
+	if (payload[MASTER] < mydata->my_id){ //If the leader id is less than the ID
+		printf("test1\n");
+		//mydata->master = 0;
+		mydata->red = 1;
+		mydata->blue = 0;
+		mydata->green = 0;
+	} else if (payload[MASTER] > mydata->my_id){ //If the leader id is greater than the ID
+		printf("test2\n");
+		mydata->red = 1;
+		mydata->blue = 1;
+		mydata->green = 1;
+		mydata->master = mydata->my_id;
+	} else if (mydata->my_id == payload[MASTER]){ //Will stop the message passing
+		printf("test3\n");
+		mydata->pass_election = 0;
+		//mydata->master = 1;
+	}
 }
+
 
 /**********************************/
+/*         SEND FUNCTIONS         */
 /**********************************/
-void send_joining()
-{
-    uint8_t i;
-    /* precondition  */
-        
-    if (mydata->state == AUTONOMOUS && is_stabilized()  && !isQueueFull())
 
-    {
-
-        i = get_nearest_two_neighbors();
-        if (i < mydata->num_neighbors && mydata->message_sent == 1)
-        {
-            // effect:
-
-            mydata->state = COOPERATIVE;
-            mydata->my_right = mydata->nearest_neighbors[i].right_id;
-            mydata->my_left = mydata->nearest_neighbors[i].id;
-			mydata->initiator = true;
-            enqueue_message(JOIN);
-#ifdef SIMULATOR
-            printf("Sending Joining %d right=%d left=%d\n", mydata->my_id, mydata->my_right, mydata->my_left);
-#endif
-        }
-    }
-}
-
-void send_sharing()
-{
-    // Precondition
-    if (mydata->now >= mydata->nextShareSending  && !isQueueFull())
-    {
-        // Sending
-        enqueue_message(SHARE);
-        // effect:
-        mydata->nextShareSending = mydata->now + SHARING_TIME;
-    }
-}
-
-
-
-
-
-void send_move()
-{
-    // Precondition:
-    if (mydata->state == COOPERATIVE  && mydata->token )
-    {
-        mydata->send_token = mydata->now + TOKEN_TIME;
-    }
-    if (mydata->state == COOPERATIVE && !isQueueFull() && mydata->token && mydata->send_token <= mydata->now)
-    {
-            // Sending
-        enqueue_message(MOVE);
-        mydata->token = 0;
-        mydata->blue = 0;
-        // effect:
-    }
-
-}
-
-void move(uint8_t tick)
-{
-    // Precondition:
-    if (mydata->motion_state == ACTIVE && mydata->state == COOPERATIVE)
-    {
-        
-      /*  if (mydata->time_active == mydata->move_motion[mydata->move_state].time)
-        {
-            // Effect:
-            mydata->green = 1;
-            mydata->move_state++;
-            if (mydata->move_state == 3)
-            {
-                mydata->send_token = 1;
-                send_move();
-#ifdef SIMULATOR
-                printf("Sending Move %d\n", mydata->my_id);
-#endif
-                mydata->motion_state = STOP;
-                return;
-            }
-            mydata->time_active = 0;
-        
-        }
-        set_motion(mydata->move_motion[mydata->move_state].motion);
-        mydata->time_active++;
-       */
-    }
-    else
-    {
-        mydata->green = 0;
-        set_motion(STOP);
-    }
-    
-}
-
-//This functions works to reset the bots when they 
-// have broken the ring 
-void reset_self()
-{
-
-    //printf("%d RESET\n", mydata->my_id);
-    
-    mydata->state = AUTONOMOUS;
-    mydata->my_left = mydata->my_right = mydata->my_id;
-    mydata->num_neighbors = 0;
-    
-    mydata->red = 0;
-    mydata->green = 0;
-    mydata->blue = 0;
-    
-    mydata->master = 0;
-}
-//This function is called when message_recv_delay is > than X time
-//Specific to ring
-void remove_neighbor(nearest_neighbor_t lost)
-{
-    uint8_t lost_bot_index;
-    lost_bot_index = exists_nearest_neighbor(lost.id);
-    
-    if (lost.id == mydata->my_right)
-    {
-        if (exists_nearest_neighbor(lost.right_id) < mydata->num_neighbors)
-        {
-            mydata->my_right = lost.right_id;
-            if (lost.is_master == 1)
-            {
-                mydata->master = 1;
-            }
-        }
-        else
-        {
-            reset_self();
-            return;
-        }
-    }
-    if (lost.id == mydata->my_left)
-    {
-        if (exists_nearest_neighbor(lost.left_id) < mydata->num_neighbors)
-        {
-            mydata->my_left = lost.left_id;
-        }
-        else
-        {
-            reset_self();
-            return;
-        }
-    }
-    mydata->nearest_neighbors[lost_bot_index] = mydata->nearest_neighbors[mydata->num_neighbors-1];    
-    mydata->num_neighbors--;
-}
-
-void send_election()
-{
-    if(mydata->initiator && !isQueueFull() && mydata->state == COOPERATIVE)
-    {
-		enqueue_message(ELECTION);
-        mydata->send_token = 1;
-    }
-}
-
-void loop()
-{
-    delay(30);
-    
-    //send_move();
-    send_joining();
-    send_sharing();
-	send_election();
-    move(mydata->now);
-
-    Send_election()
-    
-    uint8_t i;
-    for (i = 0; i < mydata->num_neighbors; i++)
-    {
-        mydata->nearest_neighbors[i].message_recv_delay++;
-
-        if (mydata->nearest_neighbors[i].message_recv_delay > 100)
-        {
-            remove_neighbor(mydata->nearest_neighbors[i]);
-            break;
-        }
-    } 
-
-	/*
-    // Master bot color switching
-    if (mydata->red == 3)
-    {
-        if (mydata->now % 100 == 0)
-        {
-            mydata->red = 0;
-            mydata->green = 3;
-        }
-    }
-    else if (mydata->red == 0 && mydata->master == 1)
-    {
-        if (mydata->now % 100 == 0)
-        {
-            mydata->red = 3;
-            mydata->green = 0;
-        }
-    }
-	*/
-    
-    set_color(RGB(mydata->red, mydata->green, mydata->blue));
-
-    mydata->loneliness++;
-    
-    if (mydata->loneliness > 100)
-    {
-        reset_self();
-    }
-    mydata->now++;
-}
-
-
+/* Sends a message to the next node
+ */
 message_t *message_tx()
 {
     
@@ -610,6 +446,8 @@ message_t *message_tx()
     return &mydata->nullmessage;
 }
  
+/* Ackknowledges when a message has been sent and recieved
+ */
 void message_tx_success() {
     if (mydata->tail != mydata->head) {  // Queue is not empty
 #ifdef SIMULATOR
@@ -628,6 +466,99 @@ void message_tx_success() {
     }
 }
 
+/* Send a message to the neighbor that it's joining the group
+ */
+void send_joining()
+{
+    uint8_t i;
+    /* precondition  */
+        
+    if (mydata->state == AUTONOMOUS && is_stabilized()  && !isQueueFull())
+
+    {
+        i = get_nearest_two_neighbors();
+	
+        if (i < mydata->num_neighbors && mydata->message_sent == 1)
+        {
+            // effect:
+		printf("test\n");
+            mydata->state = COOPERATIVE;
+            mydata->my_right = mydata->nearest_neighbors[i].right_id;
+            mydata->my_left = mydata->nearest_neighbors[i].id;
+            enqueue_message(JOIN);
+  	    mydata->pass_election = 1;
+#ifdef SIMULATOR
+            printf("Sending Joining %d right=%d left=%d\n", mydata->my_id, mydata->my_right, mydata->my_left);
+#endif
+        }
+    }
+}
+
+/* Not entirely sure what sharing does
+ */
+void send_sharing()
+{
+    // Precondition
+    if (mydata->now >= mydata->nextShareSending  && !isQueueFull())
+    {
+        // Sending
+        enqueue_message(SHARE);
+        // effect:
+        mydata->nextShareSending = mydata->now + SHARING_TIME;
+    }
+}
+
+/* Initialize the message sending
+ */
+void send_election()
+{
+    if(mydata->pass_election == 1 && !isQueueFull() && mydata->state == COOPERATIVE)
+    {
+		enqueue_message(ELECTION);
+        mydata->pass_election = 0;
+    }
+}
+
+
+/**********************************/
+/*           Core function        */
+/**********************************/
+
+/* Constantly have the bots communicate in order to stay updated
+ */
+void loop()
+{
+    delay(5);
+    send_joining();
+	send_election();
+    send_sharing();
+
+    
+    uint8_t i;
+    for (i = 0; i < mydata->num_neighbors; i++)
+    {
+        mydata->nearest_neighbors[i].message_recv_delay++;
+
+        if (mydata->nearest_neighbors[i].message_recv_delay > 100)
+        {
+            remove_neighbor(mydata->nearest_neighbors[i]);
+            break;
+        }
+    } 
+    
+    set_color(RGB(mydata->red, mydata->green, mydata->blue));
+
+    mydata->loneliness++;
+    
+    if (mydata->loneliness > 100)
+    {
+        reset_self();
+    }
+    mydata->now++;
+}
+
+/* Creates the bot "configuration"
+ */
 void setup() {
     rand_seed(rand_hard());
 
@@ -643,7 +574,7 @@ void setup() {
     mydata->motion_state = STOP;
     mydata->time_active = 0;
     mydata->move_state = 0;
-    mydata->master = 0;  //Set Master to 0
+    mydata->master = mydata->my_id;  //Set Master to 0
     mydata->move_motion[0].motion = LEFT;
     mydata->move_motion[0].motion = 3;
     mydata->move_motion[1].motion = RIGHT;
@@ -654,6 +585,7 @@ void setup() {
     mydata->green = 0,
     mydata->blue = 0,
     mydata->send_token = 0;
+	mydata->pass_election = 0;
 
     mydata->nullmessage.data[MSG] = NULL_MSG;
     mydata->nullmessage.crc = message_crc(&mydata->nullmessage);
@@ -698,3 +630,116 @@ int main() {
     
     return 0;
 }
+
+/*==========================*/
+/*       UNUSED METHOD      */
+/*==========================*/
+
+
+/*
+void send_move()
+{
+    // Precondition:
+    if (mydata->state == COOPERATIVE  && mydata->token )
+    {
+        mydata->send_token = mydata->now + TOKEN_TIME;
+    }
+    if (mydata->state == COOPERATIVE && !isQueueFull() && mydata->token && mydata->send_token <= mydata->now)
+    {
+            // Sending
+        enqueue_message(MOVE);
+        mydata->token = 0;
+        mydata->blue = 0;
+        // effect:
+    }
+
+}
+
+void move(uint8_t tick)
+{
+    // Precondition:
+    if (mydata->motion_state == ACTIVE && mydata->state == COOPERATIVE)
+    {
+        
+      /  if (mydata->time_active == mydata->move_motion[mydata->move_state].time)
+        {
+            // Effect:
+            mydata->green = 1;
+            mydata->move_state++;
+            if (mydata->move_state == 3)
+            {
+                mydata->send_token = 1;
+                send_move();
+#ifdef SIMULATOR
+                printf("Sending Move %d\n", mydata->my_id);
+#endif
+                mydata->motion_state = STOP;
+                return;
+            }
+            mydata->time_active = 0;
+        
+        }
+        set_motion(mydata->move_motion[mydata->move_state].motion);
+        mydata->time_active++;
+       /
+    }
+    else
+    {
+        mydata->green = 0;
+        set_motion(STOP);
+    }
+    
+}
+*/
+
+
+/*void recv_move(uint8_t *payload)
+{
+#ifdef SIMULATOR
+    //printf("%d Receives move %d %d %d\n", mydata->my_id, payload[MSG], mydata->my_id, payload[RECEIVER]);
+#endif
+    
+    if (mydata->my_id == payload[RECEIVER])
+    {
+        mydata->token  = 1;
+        mydata->blue  = 1;
+        mydata->send_token = mydata->now + TOKEN_TIME * 4.0;
+
+    }
+   / else if (my_id == payload[SENDER])
+    {
+        mydata->motion_state = STOP;
+    }
+    else
+    {
+        mydata->msg.data[MSG]      = payload[MSG];
+        mydata->msg.data[ID]       = mydata->my_id;
+        mydata->msg.data[RECEIVER] = payload[RECEIVER];
+        mydata->msg.data[SENDER]   = payload[SENDER];
+        mydata->msg.type           = NORMAL;
+        mydata->msg.crc            = message_crc(&msg);
+        mydata->message_sent       = 0;
+    } /
+}
+*/
+
+
+/*
+void update_color(uint8_t *payload)
+{
+    if (mydata->master == 0)
+    {
+    	if (payload[SENDER] == mydata->my_right)
+    	{
+    		if (payload[COLOR] == (RGB(0,3,0)))
+    		{
+    			mydata->green = 3;
+    		}
+    		else
+    		{
+    			mydata->green = 0;
+    		}
+    	}
+    }
+}
+*/
