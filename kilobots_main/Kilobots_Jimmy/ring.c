@@ -9,11 +9,11 @@
 	Once a new kilobot join the group, it will run an election trying to elect a new
 	leader.
 */
-//#define SIMULATOR
+#define SIMULATOR
 
 
 #ifndef SIMULATOR
-   #include <kilolib.h>
+    #include <kilolib.h>
     #include <avr/io.h>  // for microcontroller register defs
     #include "ring.h"
     USERDATA myData;
@@ -252,7 +252,7 @@ void remove_neighbor(nearest_neighbor_t lost)
 char enqueue_message(uint8_t m)
 {
 #ifdef SIMULATOR
- //   printf("%d, Prepare %d\n", mydata->my_id, m);
+    //printf("%d, Prepare %d\n", mydata->my_id, m);
 #endif
 
 	
@@ -448,6 +448,8 @@ message_t *message_tx()
 #ifdef SIMULATOR
     //printf("%d, Sending  %d  %d\n", mydata->my_id, mydata->message[mydata->head].data[MSG] , mydata->message[mydata->head].data[RECEIVER]);
 #endif
+	    
+	    mydata->message_sent = 1;
         return &mydata->message[mydata->head];
     }
     return &mydata->nullmessage;
@@ -490,7 +492,6 @@ void send_joining()
         if (i < mydata->num_neighbors && mydata->message_sent == 1)
         {
             // effect:
-		printf("test\n");
             mydata->state = COOPERATIVE;
             mydata->my_right = mydata->nearest_neighbors[i].right_id;
             mydata->my_left = mydata->nearest_neighbors[i].id;
@@ -521,7 +522,8 @@ void send_sharing()
  */
 void send_election()
 {
-    if(mydata->message_sent == 1 && !isQueueFull() && mydata->state == COOPERATIVE)
+	if (mydata->state == COOPERATIVE)
+//if(!isQueueFull() && mydata->state == COOPERATIVE)
     {
 		enqueue_message(ELECTION);
         mydata->pass_election = 0;
@@ -539,8 +541,10 @@ void loop()
 {
     delay(5);
     send_joining();
+    send_election();
     send_sharing();
-	send_election();
+//	send_election();
+	
 
     
     uint8_t i;

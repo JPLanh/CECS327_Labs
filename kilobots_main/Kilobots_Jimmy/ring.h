@@ -94,7 +94,7 @@ typedef struct
     nearest_neighbor_t nearest_neighbors[MAX_NUM_NEIGHBORS];
     motion_time_t move_motion[3];
     char send_token;
-	init8_t pass_election; // Passing the election token to another
+    uint8_t pass_election; // Passing the election token to another
     uint8_t green;
     uint8_t red;
     uint8_t blue;
