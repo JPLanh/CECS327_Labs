@@ -1,6 +1,9 @@
-//using namespace std;
+
+
 #define MAX_NUM_NEIGHBORS 10
-#define SHARING_TIME 20
+#define SHARING_TIME 10
+#define TOKEN_TIME 103
+
 
 //PAYLOAD
 #define MSG 0
@@ -11,11 +14,15 @@
 
 #define RECEIVER 5
 #define SENDER 6
-#define LEADER 7
+#define COLOR 7
+
+#define MASTER 8
 
 
 #define ACTIVE 0
 
+
+#define QUEUE 2
 
 
 
@@ -27,6 +34,7 @@ typedef enum { NULL_MSG,
     SHARE,
     JOIN,
     LEAVE,
+    MOVE,
     ELECTION,
     ELECTED
 } message_type;  // MESSAGES
@@ -54,6 +62,10 @@ typedef struct{
     uint8_t num;
     uint8_t num_cooperative;
 
+    uint8_t is_master;
+
+    uint8_t message_recv_delay;
+
 } nearest_neighbor_t;
 
 typedef struct  {
@@ -67,26 +79,30 @@ typedef struct
     uint8_t my_id;
     uint8_t my_right;
     uint8_t my_left;
-    message_t msg;
+    message_t message[QUEUE];
+    message_t nullmessage;
     robot_state state;
-
+    
     uint8_t num_neighbors;
     uint8_t message_sent;
     uint16_t now;
-    uint16_t next_share_sending;
+    uint16_t nextShareSending;
     uint8_t cur_motion;
     uint8_t motion_state;
     uint8_t time_active;
     uint8_t move_state;
     nearest_neighbor_t nearest_neighbors[MAX_NUM_NEIGHBORS];
     motion_time_t move_motion[3];
-    int8_t send_election;
-    int8_t is_leader;
-    uint8_t my_leader;
+    char send_token;
+	init8_t pass_election; // Passing the election token to another
     uint8_t green;
     uint8_t red;
     uint8_t blue;
-
-    uint8_t m;
-
+    int8_t token;
+    int8_t head, tail;
+    int8_t copies;
+    uint8_t master;			//Considers itself to be a master
+    
+    uint8_t loneliness;
+    
 } USERDATA;
