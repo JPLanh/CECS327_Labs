@@ -613,7 +613,7 @@ void setup() {
 
    
 #ifdef SIMULATOR
-    printf("Initializing %d %d\n", mydata->my_id, mydata->token);
+    printf("Initializing %d %d\n", mydata->my_id, kilo_uid);
 #endif
 
     mydata->message_sent = 1;
