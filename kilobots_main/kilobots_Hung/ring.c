@@ -1,5 +1,9 @@
 
-/**
+/*!
+	@file	ring.c
+	@author	Bryson Sherman, Hung Mach, Jimmy Lanh
+	@date	3/5/2018
+	@version 1.0
 	Creators: Bryson Sherman
 			  Hung Mach
 			  Jimmy Lanh
@@ -489,6 +493,7 @@ void send_joining()
     if (mydata->state == AUTONOMOUS && is_stabilized()  && !isQueueFull())
 
     {
+	
         i = get_nearest_two_neighbors();
 	
         if (i < mydata->num_neighbors && mydata->message_sent == 1)
