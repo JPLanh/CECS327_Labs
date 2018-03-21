@@ -1,13 +1,13 @@
 import java.rmi.*;
 import java.net.*;
 import java.util.*;
+
+import javax.json.*;
+
 import java.io.*;
 import java.nio.file.*;
 import java.math.BigInteger;
 import java.security.*;
-
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.databind.ObjectMapper;
 // import a json package
 
 
@@ -80,6 +80,17 @@ public class DFS
         long guid = md5("" + port);
         chord = new Chord(port, guid);
         Files.createDirectories(Paths.get(guid+"/repository"));
+        System.out.println(md5("Metadata"));
+        File f = new File(guid+"/repository/"+md5("Metadata"));
+        if (!f.exists()){
+            System.out.println("Creating meta");
+            PrintWriter pr = new PrintWriter(f);
+            pr.print("{\"metadata\":[]}");
+            pr.close();
+            f.createNewFile();
+        } else {
+            System.out.println("metadata already exist");
+        }
     }
     
     public  void join(String Ip, int port) throws Exception
@@ -88,36 +99,57 @@ public class DFS
         chord.Print();
     }
     
-    public JsonParser readMetaData() throws Exception
+    public JsonReader readMetaData() throws Exception
     {
-        JsonParser jsonParser = null;
         long guid = md5("Metadata");
+
         ChordMessageInterface peer = chord.locateSuccessor(guid);
         InputStream metadataraw = peer.get(guid);
-        jsonParser = Json.createParser(metadataraw);
-        return jsonParser;
+        return Json.createReader(metadataraw);
     }
     
     public void writeMetaData(InputStream stream) throws Exception
     {
-        JsonParser jsonParser _ null;
         long guid = md5("Metadata");
         ChordMessageInterface peer = chord.locateSuccessor(guid);
         peer.put(guid, stream);
     }
    
-    public void mv(String oldName, String newName) throws Exception
+    public void mv(String oldName, JsonValue newName) throws Exception
     {
-        // TODO:  Change the name in Metadata
-        // Write Metadata
+        JsonObject parser = (JsonObject) readMetaData();
+        JsonArray fileList = parser.getJsonArray("metadata");
+        
+        for (int i = 0; i < fileList.size(); i++){
+            JsonObject getJson = fileList.get(i).asJsonObject();
+            if (getJson.get("name").toString().equals(oldName)){
+                getJson.put("name",  newName);
+                JsonArray pageList = getJson.get("pages").asJsonArray();
+                for (int j = 0; j < pageList.size(); j++){
+                    JsonObject pageGet = pageList.get(j).asJsonObject();
+                    long newValue = md5(newName.toString()+(j+1));
+                    pageGet.put("guid",  Json.createValue(newValue));
+                    byte[] pageByte = read(oldName, j+1);
+
+                    File tempFile = File.createTempFile("temp", null);
+                    FileOutputStream fos = new FileOutputStream(tempFile);
+                    fos.write(pageByte);
+                    fos.close();
+                    
+                    InputStream input = new FileStream("temp.tmp");
+                    writeMetaData(input);
+                }
+            }
+        }
     }
 
     
     public String ls() throws Exception
     {
         String listOfFiles = "";
-       // TODO: returns all the files in the Metadata
-       // JsonParser jp = readMetaData();
+       JsonReader reader = readMetaData();
+       System.out.println("Starting ls");
+       
         return listOfFiles;
     }
 
@@ -142,19 +174,19 @@ public class DFS
         
     }
     
-    public Byte[] read(String fileName, int pageNumber) throws Exception
+    public byte[] read(String fileName, int pageNumber) throws Exception
     {
         // TODO: read pageNumber from fileName
         return null;
     }
     
     
-    public Byte[] tail(String fileName) throws Exception
+    public byte[] tail(String fileName) throws Exception
     {
         // TODO: return the last page of the fileName
         return null;
     }
-    public Byte[] head(String fileName) throws Exception
+    public byte[] head(String fileName) throws Exception
     {
         // TODO: return the first page of the fileName
         return null;
