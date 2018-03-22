@@ -1,3 +1,16 @@
+/*!
+	@files	Client.java, DFS.Java
+	@author	Bryson Sherman, Hung Mach, Jimmy Lanh
+	@date	4/3/2018
+	@version 1.0
+	Creators: Bryson Sherman
+			  Hung Mach
+			  Jimmy Lanh
+		  
+	Due Date: 4/3/2018
+	
+*/
+
 import java.rmi.*;
 import java.net.*;
 import java.util.*;

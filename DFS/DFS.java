@@ -53,6 +53,10 @@ public class DFS
     int port;
     Chord  chord;
     
+    /** Function that will help generate the GUID
+     * @objectName not sure yet
+     * @return a GUID
+     */
     private long md5(String objectName)
     {
         try
@@ -71,8 +75,9 @@ public class DFS
         return 0;
     }
     
-    
-    
+    /** Constructor that initialize the port and create the metadata
+     * @Port: the port that the user wish to connect to
+     */
     public DFS(int port) throws Exception
     {
         
@@ -93,12 +98,21 @@ public class DFS
         }
     }
     
+
+    /** Connect to the desired destination through a certain port
+     * @Ip The destination
+     * @port The port which we will connect to
+     */
     public  void join(String Ip, int port) throws Exception
     {
         chord.joinRing(Ip, port);
         chord.Print();
     }
     
+
+    /** Function that will help generate the GUID
+     * @return JsonReader with the Json information ready to be read
+     */
     public JsonReader readMetaData() throws Exception
     {
         long guid = md5("Metadata");
@@ -114,7 +128,9 @@ public class DFS
         ChordMessageInterface peer = chord.locateSuccessor(guid);
         peer.put(guid, stream);
     }
-   
+
+    /** ??
+     */   
     public void mv(String oldName, JsonValue newName) throws Exception
     {
         JsonObject parser = (JsonObject) readMetaData();
@@ -143,14 +159,25 @@ public class DFS
         }
     }
 
-    
+
+    /** Gather all files
+     * @return a string of all files
+     */    
     public String ls() throws Exception
     {
         String listOfFiles = "";
        JsonReader reader = readMetaData();
-       System.out.println("Starting ls");
+       JsonObject readerGet = reader.readObject();
+       reader.close();
+       JsonArray metaReader = readerGet.getJsonArray("metadata");
+
+       for (int i = 0; i < metaReader.size(); i++){
+    	   JsonObject getJson = metaReader.getJsonObject(i);
+    	   JsonObject getJsonFile = getJson.getJsonObject("file");
+    	   listOfFiles += getJsonFile.getJsonString("name") + "\n";
+       }
        
-        return listOfFiles;
+       return listOfFiles;
     }
 
     
