@@ -25,8 +25,9 @@ public class Client
     DFS dfs;
     public Client(int p) throws Exception {
         dfs = new DFS(p);
-        
-        System.out.println(dfs.ls());
+//        dfs.touch("test");
+//        System.out.println();
+        dfs.delete("File2");
             // User interface:
             // join, ls, touch, delete, read, tail, head, append, move
     }
