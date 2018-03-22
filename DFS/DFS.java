@@ -173,19 +173,11 @@ public class DFS
     }
     public void delete(String fileName) throws Exception
     {
-        // TODO: remove all the pages in the entry fileName in the Metadata and then the entry
-        // for each page in Metadata.filename
-        //     peer = chord.locateSuccessor(page.guid);
-        //     peer.delete(page.guid)
-        // delete Metadata.filename
-        // Write Metadata
-
     	JsonArray metaReader = getMetaData();
     	JsonArrayBuilder newMeta = Json.createArrayBuilder();
     	
     	for (int i = 0; i < metaReader.size();i++){
     		JsonObject getJson = metaReader.getJsonObject(i).getJsonObject("file");
-//    		System.out.println(getJson.getJsonString("name") + " " + fileName);
     		if (getJson.getJsonString("name").toString().replaceAll("\"", "").equals(fileName)){
     			JsonArray getJsonPages = getJson.getJsonArray("page");
     			for (int j = 0; j < getJsonPages.size(); j++){
@@ -204,16 +196,39 @@ public class DFS
     			newMeta.add("metaData")
     				.add(jsonMainFileObject);
     		}
-    	}
-    	
-
-		System.out.println(newMeta.build().toString());
-        
+    	}    	
+		writeMetaData(newMeta.build().toString());        
     }
     
     public byte[] read(String fileName, int pageNumber) throws Exception
-    {
-        // TODO: read pageNumber from fileName
+    {   
+        JsonArray metaReader =  getMetaData();
+        for ( int i = 0 ; i < metaReader.size(); i++){
+            JsonObject getJson = metaReader.getJsonObject(i).getJsonObject("file");
+            if (getJson.getJsonString("name").toString().replaceAll("\"", "").equals(fileName)){
+                JsonArray getJsonPage = getJson.getJsonArray("page");
+                for (int j = 0; j < getJsonPage.size(); j++){                    
+                    if (Integer.parseInt(getJsonPage.get(i).asJsonObject().getJsonString("number").toString().replaceAll("\"",  "")) == (pageNumber)){
+                        int pageNumberGet = Integer.parseInt(getJsonPage.get(i).asJsonObject().getJsonString("number").toString().replaceAll("\"",  ""));
+                        int sizeGet = Integer.parseInt(getJsonPage.get(i).asJsonObject().getJsonString("size").toString().replaceAll("\"",  ""));
+                        int guidGet = Integer.parseInt(getJsonPage.get(i).asJsonObject().getJsonString("guid").toString().replaceAll("\"",  ""));
+                        
+                        ChordMessageInterface peer = chord.locateSuccessor(guidGet);
+                        InputStream is = peer.get(guidGet);
+
+                        byte[] array = new byte[sizeGet];
+                        ByteArrayOutputStream byteBuffer = new ByteArrayOutputStream();
+                        int nRead = 0; 
+                        while (nRead != is.read(array, 0, array.length)){
+                            byteBuffer.write(array, 0, nRead);                            
+                        }
+                        byteBuffer.flush();
+                        is.close();
+                        return array;
+                    }
+                }
+            }
+        }
         return null;
     }
     
