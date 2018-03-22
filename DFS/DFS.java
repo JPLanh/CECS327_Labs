@@ -8,45 +8,6 @@ import java.io.*;
 import java.nio.file.*;
 import java.math.BigInteger;
 import java.security.*;
-// import a json package
-
-
-/* JSON Format
-
- {
-    "metadata" :
-    {
-        file :
-        {
-            name  : "File1"
-            numberOfPages : "3"
-            pageSize : "1024"
-            size : "2291"
-            page :
-            {
-                number : "1"
-                guid   : "22412"
-                size   : "1024"
-            }
-            page :
-            {
-                number : "2"
-                guid   : "46312"
-                size   : "1024"
-            }
-            page :
-            {
-                number : "3"
-                guid   : "93719"
-                size   : "243"
-            }
-        }
-    }
-}
- 
- 
- */
-
 
 public class DFS
 {
@@ -84,18 +45,7 @@ public class DFS
         this.port = port;
         long guid = md5("" + port);
         chord = new Chord(port, guid);
-        Files.createDirectories(Paths.get(guid+"/repository"));
-        System.out.println(md5("Metadata"));
-        File f = new File(guid+"/repository/"+md5("Metadata"));
-        if (!f.exists()){
-            System.out.println("Creating meta");
-            PrintWriter pr = new PrintWriter(f);
-            pr.print("{\"metadata\":[]}");
-            pr.close();
-            f.createNewFile();
-        } else {
-            System.out.println("metadata already exist");
-        }
+        Files.createDirectories(Paths.get(guid+"/repository"));        
     }
     
 
