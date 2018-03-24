@@ -125,6 +125,8 @@ public class DFS
         // TODO:  Change the name in Metadata
         // Write Metadata
     	// Mental Note: Just renames the file.. apparently
+    	JsonArray metaReader = getMetaData();
+    	
     }
 
 
@@ -208,10 +210,10 @@ public class DFS
             if (getJson.getJsonString("name").toString().replaceAll("\"", "").equals(fileName)){
                 JsonArray getJsonPage = getJson.getJsonArray("page");
                 for (int j = 0; j < getJsonPage.size(); j++){                    
-                    if (Integer.parseInt(getJsonPage.get(i).asJsonObject().getJsonString("number").toString().replaceAll("\"",  "")) == (pageNumber)){
-                        int pageNumberGet = Integer.parseInt(getJsonPage.get(i).asJsonObject().getJsonString("number").toString().replaceAll("\"",  ""));
-                        int sizeGet = Integer.parseInt(getJsonPage.get(i).asJsonObject().getJsonString("size").toString().replaceAll("\"",  ""));
-                        int guidGet = Integer.parseInt(getJsonPage.get(i).asJsonObject().getJsonString("guid").toString().replaceAll("\"",  ""));
+                    if (Integer.parseInt(getJsonPage.get(j).asJsonObject().getJsonString("number").toString().replaceAll("\"",  "")) == (pageNumber)){
+                        int pageNumberGet = Integer.parseInt(getJsonPage.get(j).asJsonObject().getJsonString("number").toString().replaceAll("\"",  ""));
+                        int sizeGet = Integer.parseInt(getJsonPage.get(j).asJsonObject().getJsonString("size").toString().replaceAll("\"",  ""));
+                        int guidGet = Integer.parseInt(getJsonPage.get(j).asJsonObject().getJsonString("guid").toString().replaceAll("\"",  ""));
                         
                         ChordMessageInterface peer = chord.locateSuccessor(guidGet);
                         InputStream is = peer.get(guidGet);
@@ -241,6 +243,31 @@ public class DFS
     public byte[] head(String fileName) throws Exception
     {
         // TODO: return the first page of the fileName
+    	JsonArray metaReader =  getMetaData();
+    	for ( int i = 0 ; i < metaReader.size(); i++){
+    		JsonObject getJson = metaReader.getJsonObject(i).getJsonObject("file");
+    		if (getJson.getJsonString("name").toString().replaceAll("\"", "").equals(fileName)){
+    			JsonArray getJsonPage = getJson.getJsonArray("page");
+    			if (Integer.parseInt(getJsonPage.get(0).asJsonObject().getJsonString("number").toString().replaceAll("\"",  "")) == 1){
+    				int sizeGet = Integer.parseInt(getJsonPage.get(0).asJsonObject().getJsonString("size").toString().replaceAll("\"",  ""));
+                    int guidGet = Integer.parseInt(getJsonPage.get(0).asJsonObject().getJsonString("guid").toString().replaceAll("\"",  ""));
+                    
+                    ChordMessageInterface peer = chord.locateSuccessor(guidGet);
+                    InputStream is = peer.get(guidGet);
+
+                    byte[] array = new byte[sizeGet];
+                    ByteArrayOutputStream byteBuffer = new ByteArrayOutputStream();
+                    int nRead = 0; 
+                    while (nRead != is.read(array, 0, array.length)){
+                        byteBuffer.write(array, 0, nRead);                            
+                    }
+                    byteBuffer.flush();
+                    is.close();
+                    return array;
+    			}
+    		}
+    	}
+    	//read(fileName, 1);
         return null;
     }
     public void append(String filename, Byte[] data) throws Exception
@@ -250,7 +277,7 @@ public class DFS
         //ChordMessageInterface peer = chord.locateSuccessor(guid);
         //peer.put(guid, data);
         // Write Metadata
-
+    	
         
     }
     
