@@ -120,12 +120,35 @@ public class DFS
 
 	/** ??
 	 */   
-	public void mv(String oldName, JsonValue newName) throws Exception
+	public void mv(String oldName, String newName) throws Exception
 	{
 		// TODO:  Change the name in Metadata
 		// Write Metadata
 		// Mental Note: Just renames the file.. apparently
 		JsonArray metaReader = getMetaData();
+		for (int i = 0; i < metaReader.size();i++){
+			JsonObject getJson = metaReader.getJsonObject(i).getJsonObject("file");
+			if (getJson.getJsonString("name").toString().replaceAll("\"", "").equals(oldName)){
+				JsonArray getJsonArray = getJson.getJsonArray("page");
+				JsonObjectBuilder newFileMeta = Json.createObjectBuilder()
+						.add("file", Json.createObjectBuilder()
+								.add("name", newName)
+								.add("numberOfPages", getJson.getJsonNumber("numberOfPages").intValue())
+								.add("pageSize", getJson.getJsonNumber("pageSize").intValue())
+								.add("size", getJson.getJsonNumber("size").intValue())
+								.add("page", getJsonArray));						
+				delete(oldName);
+				JsonArrayBuilder newMetaJsonArray = Json.createArrayBuilder(getMetaData())
+						.add(newFileMeta.build());
+				JsonArray newMeta = newMetaJsonArray.build();
+
+				JsonObject newMetaData = Json.createObjectBuilder()
+						.add("metadata", newMeta).build();
+
+				writeMetaData(newMetaData.toString());
+				break;
+			}
+		}	
 
 	}
 
@@ -185,14 +208,11 @@ public class DFS
 		JsonArrayBuilder newMeta = Json.createArrayBuilder();
 		JsonArrayBuilder newFileMeta = Json.createArrayBuilder();
 		for (int i = 0; i < metaReader.size();i++){
-			System.out.println("I: " + i);
 			JsonObject getJson = metaReader.getJsonObject(i).getJsonObject("file");
 			if (getJson.getJsonString("name").toString().replaceAll("\"", "").equals(fileName)){
 				JsonArray getJsonPages = getJson.getJsonArray("page");
-				System.out.println("Deteing pages");
 				for (int j = 0; j < getJsonPages.size(); j++){
 					JsonObject tempPage = getJsonPages.getJsonObject(j);
-					//					long guidPage = Integer.parseInt(tempPage.getJsonString("guid").toString().replaceAll("\"", ""));
 					long guidPage = tempPage.getJsonNumber("guid").longValue();
 
 					ChordMessageInterface peer = chord.locateSuccessor(guidPage);
@@ -228,7 +248,6 @@ public class DFS
 							ByteArrayOutputStream byteBuffer = new ByteArrayOutputStream();
 							int nRead = is.read();
 							while (nRead != 0){
-//								System.out.println(nRead);
 								byteBuffer.write(nRead);
 								nRead = is.read();
 							}
@@ -249,7 +268,7 @@ public class DFS
 					ByteArrayOutputStream byteBuffer = new ByteArrayOutputStream();
 					int nRead = is.read();
 					while (nRead != 0){
-//						System.out.println(nRead);
+						//						System.out.println(nRead);
 						byteBuffer.write(nRead);
 						nRead = is.read();
 					}
