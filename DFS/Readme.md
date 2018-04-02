@@ -1,9 +1,9 @@
 # Distributed File System
 
 # To run
-Originally need to be open through terminal with argument pass, but for now just for testing purposes we can compile it and run normally.
+In order to execute the file we need to execute it through command (atleast on windows)
 
-# Command to run, atleast on window machine
+## Command to run, atleast on window machine
 javac Client {port number}
 To be consitent with the peers we are using 23245
 
