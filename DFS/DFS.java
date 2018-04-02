@@ -42,6 +42,15 @@ public class DFS
         long guid = md5("" + port);
         chord = new Chord(port, guid);
         Files.createDirectories(Paths.get(guid+"/repository"));
+
+        long guidJson = md5("Metadata");
+        File testMeta = new File(guid+"/repository/"+guidJson);
+
+        if (!testMeta.exists()){
+            JsonObjectBuilder getNewMeta = Json.createObjectBuilder()
+                    .add("metadata", Json.createArrayBuilder().build());
+            writeMetaData(getNewMeta.build().toString());   
+        }
     }
 
 
@@ -87,33 +96,29 @@ public class DFS
      */
     public void mv(String oldName, String newName) throws Exception
     {
-        // TODO:  Change the name in Metadata
-        // Write Metadata
-        // Mental Note: Just renames the file.. apparently
         JsonArray metaReader = getMetaData();
+        JsonArrayBuilder newFileMeta = Json.createArrayBuilder();
         for (int i = 0; i < metaReader.size();i++){
             JsonObject getJson = metaReader.getJsonObject(i).getJsonObject("file");
             if (getJson.getJsonString("name").toString().replaceAll("\"", "").equals(oldName)){
                 JsonArray getJsonArray = getJson.getJsonArray("page");
-                JsonObjectBuilder newFileMeta = Json.createObjectBuilder()
+                JsonObjectBuilder newObjectMeta = Json.createObjectBuilder()
                         .add("file", Json.createObjectBuilder()
                                 .add("name", newName)
                                 .add("numberOfPages", getJson.getJsonNumber("numberOfPages").intValue())
                                 .add("pageSize", getJson.getJsonNumber("pageSize").intValue())
                                 .add("size", getJson.getJsonNumber("size").intValue())
-                                .add("page", getJsonArray));                        
-                delete(oldName);
-                JsonArrayBuilder newMetaJsonArray = Json.createArrayBuilder(getMetaData())
-                        .add(newFileMeta.build());
-                JsonArray newMeta = newMetaJsonArray.build();
+                                .add("page", getJsonArray)); 
+                newFileMeta.add(newObjectMeta.build());
 
-                JsonObject newMetaData = Json.createObjectBuilder()
-                        .add("metadata", newMeta).build();
-
-                writeMetaData(newMetaData.toString());
                 break;
+            } else {                            
+                newFileMeta.add(Json.createObjectBuilder(metaReader.getJsonObject(i)).build());
             }
         }   
+        JsonObjectBuilder getNewMeta = Json.createObjectBuilder()
+                .add("metadata", newFileMeta.build());
+        writeMetaData(getNewMeta.build().toString());        
 
     }
 
@@ -341,7 +346,7 @@ public class DFS
         }
 
     }
-    
+
     public int getSize(String fileName) throws Exception{
 
         JsonArray metaReader = getMetaData();

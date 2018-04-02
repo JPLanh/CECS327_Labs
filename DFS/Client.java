@@ -65,6 +65,7 @@ public class Client
                         }
                     } catch (Exception e){
                         System.out.println("Such file does not exist");
+                        e.printStackTrace();
                     }
                 } else if (input[0].toLowerCase().equals("get")){
                     int size = dfs.getSize(input[1]);
