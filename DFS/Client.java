@@ -36,6 +36,7 @@ public class Client
                 if (input[0].toLowerCase().equals("help")){
                     System.out.printf("%1$-10s %2$-20s %3$-30s\n", "Command", "Argument", "Description");
                     System.out.printf("%070d\n", 0);
+                    System.out.printf("%1$-10s %2$-25s %3$-30s\n\n\n", "Join", "{IP} {Port}", "Join a group with the given port number");
                     System.out.printf("%1$-10s %2$-25s %3$-30s\n", "LS", "None", "List all files");
                     System.out.printf("%1$-10s %2$-25s %3$-30s\n", "MV", "{old name} {new name}", "Rename a file to a new name");
                     System.out.printf("%1$-10s %2$-25s %3$-30s\n", "Del", "{file name}", "Delete the specified file name");
@@ -93,32 +94,24 @@ public class Client
                     } catch (Exception e){
                         System.out.println("Unable to find " + input[1]);
                     }
+                } else if (input[0].toLowerCase().equals("join")){
+                    dfs.join(input[1], Integer.parseInt(input[2]));
                 }
             }
         }
-
-
-
-
-        //            dfs.append("test.txt", new byte[6]);
-        //        System.out.println();
-        //        dfs.delete("File2");
-        //        dfs.read("File1", 1);
-        //dfs.tail("File1");
         // User interface:
-        // join, ls, touch, delete, read, tail, head, append, move
+        // tail, head
     }
 
     static public void main(String args[]) throws Exception
     {
-        /*
+        
         if (args.length < 1 ) {
             throw new IllegalArgumentException("Parameter: <port>");
         }
 
         Client client=new Client( Integer.parseInt(args[0]));
-         */
-
-        Client client = new Client(23245);
+       
+        //Client client = new Client(23245);
     } 
 }
