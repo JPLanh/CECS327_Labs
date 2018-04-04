@@ -5,6 +5,7 @@ In order to execute the file we need to execute it through command (atleast on w
 
 ## Command to run, atleast on window machine <br/>
 java -classpath .;./javax.json-1.1.jar Client {port number} <br/>
+change the ";" in the command for a UNIX based machine (Linux, MAC) <br/>
 To be consitent with the peers we are using 23245
 
 # Notice
