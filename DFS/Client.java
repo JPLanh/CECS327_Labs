@@ -3,6 +3,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Scanner;
+import java.util.Arrays;
 
 /*!
 	@files	Client.java, DFS.Java
@@ -23,6 +24,9 @@ public class Client
     Scanner getInput = new Scanner(System.in);
     boolean running = true;
 
+	/**Client user interface with all the menu and parses string inputs
+	* @param p 	the port number being passed in from console
+	*/
     public Client(int p) throws Exception {
         dfs = new DFS(p);
         while(running){
@@ -41,32 +45,57 @@ public class Client
                     System.out.printf("%1$-10s %2$-25s %3$-30s\n", "MV", "{old name} {new name}", "Rename a file to a new name");
                     System.out.printf("%1$-10s %2$-25s %3$-30s\n", "Del", "{file name}", "Delete the specified file name");
                     System.out.printf("%1$-10s %2$-25s %3$-30s\n", "Put", "{file name}", "Upload the specified name into the DFS");
-                    System.out.printf("%1$-10s %2$-25s %3$-30s\n\n\n", "Get", "{file name}", "Download the specified file from the DFS");
+                    System.out.printf("%1$-10s %2$-25s %3$-30s\n", "Touch", "{file name}", "Create a new file in the metadata");
+                    System.out.printf("%1$-10s %2$-25s %3$-30s\n", "Append", "{file name}{Byte (in array)}", "Add a new page after the last page");
+                    System.out.printf("%1$-10s %2$-25s %3$-30s\n", "Head", "{file name}", "Prints out the head of the file");
+					System.out.printf("%1$-10s %2$-25s %3$-30s\n", "Tail", "{file name}", "Rpints out the tail of the file");
+					System.out.printf("%1$-10s %2$-25s %3$-30s\n\n\n", "Get", "{file name}", "Download the specified file from the DFS");
+					
                 } else if (input[0].toLowerCase().equals("ls")){
                     System.out.println(dfs.ls());
                 } else if (input[0].toLowerCase().equals("exit")){
                     running = false;
                     System.exit(0);
-                } else {
+                }else {
                     System.out.println("Invalid Command");
                 }
             } else if (input.length == 2){
                 if (input[0].toLowerCase().equals("del")){
                     dfs.delete(input[1]);
                     System.out.println("File has been deleted from the DFS");
-                } else if (input[0].toLowerCase().equals("put")){
+                } else if (input[0].toLowerCase().equals("head")){
+					int size = dfs.getSize(input[1]);
+					if(size == -1){
+							System.out.println("File does not exist");
+					}	else {
+							System.out.println(Arrays.toString(dfs.head(input[1])));
+					}
+                }else if (input[0].toLowerCase().equals("touch")){
+                    try{
+                        dfs.touch(input[1]);
+                        System.out.println("Touch process completed");
+                    } catch (Exception e){
+                        System.out.println("Error trying to touch file: " + input[1]);
+                    }
+				} else if (input[0].toLowerCase().equals("tail")){
+					int size = dfs.getSize(input[1]);
+					if(size == -1){
+							System.out.println("File does not exist");
+					}	else {
+							System.out.println(Arrays.toString(dfs.tail(input[1])));
+					}
+				} else if (input[0].toLowerCase().equals("put")){
                     try {
                         Path path = Paths.get(input[1]);
                         byte[] data = Files.readAllBytes(path);
                         if (data.length == 0){
                             System.out.println("Such file does not exist");
                         } else {
-                            dfs.append(input[1], data);
+                            dfs.putFile(input[1], data);
                             System.out.println("File has been uploaded to the DFS");
                         }
                     } catch (Exception e){
                         System.out.println("Such file does not exist");
-                        e.printStackTrace();
                     }
                 } else if (input[0].toLowerCase().equals("get")){
                     int size = dfs.getSize(input[1]);
@@ -79,7 +108,7 @@ public class Client
                             try{
                                 writer.write(getByte);
                             } catch (Exception e){
-                                e.printStackTrace();
+                                System.out.println("Unable to write file since it does not exist");
                             }                        
                         }
                         writer.close();
@@ -96,6 +125,20 @@ public class Client
                     }
                 } else if (input[0].toLowerCase().equals("join")){
                     dfs.join(input[1], Integer.parseInt(input[2]));
+                }
+            }
+            if (input.length > 2){
+                if (input[0].toLowerCase().equals("append")){
+                    String tempString = "";
+                    for (int i = 2; i < input.length; i++){
+                        tempString = tempString.concat(input[i] + " ");
+                    }
+                    byte[] data = tempString.getBytes();
+                    try{
+                        dfs.append(input[1], data);
+                    } catch (Exception e){
+                        System.out.println("Such file does not exist");
+                    }
                 }
             }
         }

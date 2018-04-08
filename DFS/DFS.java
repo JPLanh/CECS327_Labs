@@ -213,7 +213,7 @@ public class DFS
             if (getJson.getJsonString("name").toString().replaceAll("\"", "").equals(fileName)){
                 JsonArray getJsonPage = getJson.getJsonArray("page");
                 if (pageNumber != -1){
-                    for (int j = 0; j < getJsonPage.size(); j++){                    
+                    for (int j = 0; j < getJsonPage.size(); j++){         
                         if (getJsonPage.get(j).asJsonObject().getJsonNumber("number").intValue() == (pageNumber)){
                             long  guidGet = getJsonPage.get(j).asJsonObject().getJsonNumber("guid").longValue();
                             ChordMessageInterface peer = chord.locateSuccessor(guidGet);
@@ -233,7 +233,6 @@ public class DFS
                 } else {
                     int j = getJsonPage.size()-1;
                     long  guidGet = getJsonPage.get(j).asJsonObject().getJsonNumber("guid").longValue();
-                    System.out.println(guidGet + "  |  " + pageNumber);
                     ChordMessageInterface peer = chord.locateSuccessor(guidGet);
                     InputStream is = peer.get(guidGet);
 
@@ -275,7 +274,86 @@ public class DFS
         return read(fileName, 1);
     }
 
+    public void append(String fileName, byte[] data) throws Exception{
 
+        JsonObject foundObject = null;
+
+        JsonArray metaReader = getMetaData();
+        for ( int i = 0 ; i < metaReader.size(); i++){
+            JsonObject getJson = metaReader.getJsonObject(i).getJsonObject("file");
+            if (getJson.getJsonString("name").toString().replaceAll("\"", "").equals(fileName)){
+                foundObject = getJson;
+                break;
+            }
+        }  
+        
+        if (foundObject == null){
+            System.out.println("No such filename exist on the metadata, please touch it first.");
+        } else{
+            int page = Integer.parseInt(foundObject.getJsonNumber("numberOfPages").toString().replaceAll("\"", ""));
+            int maxSize = Integer.parseInt(foundObject.getJsonNumber("pageSize").toString().replaceAll("\"", ""));
+            int size = Integer.parseInt(foundObject.getJsonNumber("size").toString().replaceAll("\"", ""));
+            JsonArrayBuilder pageList = Json.createArrayBuilder(foundObject.getJsonArray("page"));
+            int count = 0;
+            
+            while(((count)*maxSize) < data.length){
+                int remainingLength = 0;
+                byte[] dataChunk = new byte[maxSize];
+                if ((data.length-(count*maxSize)) > maxSize) remainingLength = maxSize;
+                else remainingLength = data.length - (count*maxSize);
+                System.arraycopy(data, (count)*maxSize, dataChunk, 0, remainingLength);
+                InputStream is = new ByteArrayInputStream(dataChunk);
+
+                long guid = md5(fileName + "" + page);
+                ChordMessageInterface peer = chord.locateSuccessor(guid);
+                peer.put(guid, is);
+                JsonObjectBuilder newPage = Json.createObjectBuilder()
+                        .add("number", page)
+                        .add("guid", guid)
+                        .add("size", remainingLength);
+                pageList.add(newPage);
+                size += remainingLength;
+                page++;
+                count++;
+            }
+
+            //Delete the old one
+            JsonArray metaReaderBeta = getMetaData();
+            JsonArrayBuilder newFileMeta = Json.createArrayBuilder();
+            for (int i = 0; i < metaReaderBeta.size();i++){
+                JsonObject getJsonBeta = metaReaderBeta.getJsonObject(i).getJsonObject("file");
+                if (getJsonBeta.getJsonString("name").toString().replaceAll("\"", "").equals(fileName)){
+                } else {                            
+                    newFileMeta.add(Json.createObjectBuilder(metaReader.getJsonObject(i)).build());
+                }
+            }       
+            JsonObjectBuilder getNewMeta = Json.createObjectBuilder()
+                    .add("metadata", newFileMeta.build());
+            writeMetaData(getNewMeta.build().toString());
+            //Write the new one without removing the GUID
+            
+            metaReader = getMetaData();
+            JsonObjectBuilder newFile = Json.createObjectBuilder()
+                    .add("file", Json.createObjectBuilder()
+                            .add("name", fileName)
+                            .add("numberOfPages", page)
+                            .add("pageSize", maxSize)
+                            .add("size", size)
+                            .add("page", pageList.build()));
+
+            JsonArrayBuilder newMetaJsonArray = Json.createArrayBuilder(metaReader)
+                    .add(newFile.build());
+            JsonArray newMeta = newMetaJsonArray.build();
+
+            JsonObject newMetaData = Json.createObjectBuilder()
+                    .add("metadata", newMeta).build();
+
+            writeMetaData(newMetaData.toString());
+        }
+
+    }
+    
+    
     /** Add in new pages to the file in the metadata, first by creating a new page
      * (touch) and them rum it again appending the data and info in
      * 
@@ -283,7 +361,7 @@ public class DFS
      * @param data The segment of data that the guid will contain
      * @throws Exception
      */ 
-    public void append(String fileName, byte[] data) throws Exception
+    public void putFile(String fileName, byte[] data) throws Exception
     {
         JsonObject foundObject = null;
 
@@ -325,7 +403,21 @@ public class DFS
                 count++;
             }
 
-            delete(fileName);
+            //Delete the old one
+            JsonArray metaReaderBeta = getMetaData();
+            JsonArrayBuilder newFileMeta = Json.createArrayBuilder();
+            for (int i = 0; i < metaReaderBeta.size();i++){
+                JsonObject getJsonBeta = metaReaderBeta.getJsonObject(i).getJsonObject("file");
+                if (getJsonBeta.getJsonString("name").toString().replaceAll("\"", "").equals(fileName)){
+                } else {                            
+                    newFileMeta.add(Json.createObjectBuilder(metaReader.getJsonObject(i)).build());
+                }
+            }       
+            JsonObjectBuilder getNewMeta = Json.createObjectBuilder()
+                    .add("metadata", newFileMeta.build());
+            writeMetaData(getNewMeta.build().toString());
+            //Write the new one without removing the GUID
+            
             metaReader = getMetaData();
             JsonObjectBuilder newFile = Json.createObjectBuilder()
                     .add("file", Json.createObjectBuilder()
