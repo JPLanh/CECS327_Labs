@@ -70,7 +70,6 @@ public class DFS
     public JsonReader readMetaData() throws Exception
     {
         long guid = md5("Metadata");
-
         ChordMessageInterface peer = chord.locateSuccessor(guid);
         InputStream metadataraw = peer.get(guid);
         return Json.createReader(metadataraw);
@@ -182,9 +181,10 @@ public class DFS
                 JsonArray getJsonPages = getJson.getJsonArray("page");
                 for (int j = 0; j < getJsonPages.size(); j++){
                     JsonObject tempPage = getJsonPages.getJsonObject(j);
+                    long guid = md5("Metadata");
                     long guidPage = tempPage.getJsonNumber("guid").longValue();
 
-                    ChordMessageInterface peer = chord.locateSuccessor(guidPage);
+                    ChordMessageInterface peer = chord.locateSuccessor(guid);
                     peer.delete(guidPage);
 
                 }
@@ -216,7 +216,9 @@ public class DFS
                     for (int j = 0; j < getJsonPage.size(); j++){         
                         if (getJsonPage.get(j).asJsonObject().getJsonNumber("number").intValue() == (pageNumber)){
                             long  guidGet = getJsonPage.get(j).asJsonObject().getJsonNumber("guid").longValue();
-                            ChordMessageInterface peer = chord.locateSuccessor(guidGet);
+
+                            long guid = md5("Metadata");
+                            ChordMessageInterface peer = chord.locateSuccessor(guid);
                             InputStream is = peer.get(guidGet);
 
                             ByteArrayOutputStream byteBuffer = new ByteArrayOutputStream();
@@ -260,7 +262,7 @@ public class DFS
      */
     public byte[] tail(String fileName) throws Exception
     {
-        return read(fileName, -1);
+        return read(fileName, getSize(fileName)-1);
     }
 
     /** Reads the first page of the file
@@ -271,18 +273,27 @@ public class DFS
      */
     public byte[] head(String fileName) throws Exception
     {
-        return read(fileName, 1);
+        return read(fileName, 0);
     }
 
+
+    /** Appends a new page to a file with the following bytes
+     * 
+     * @param fileName The name of the file we want to add data into
+     * @param data The segment of data that the guid will contain
+     * @throws Exception
+     */ 
     public void append(String fileName, byte[] data) throws Exception{
 
         JsonObject foundObject = null;
 
         JsonArray metaReader = getMetaData();
+        System.out.println("Flag 1");
         for ( int i = 0 ; i < metaReader.size(); i++){
             JsonObject getJson = metaReader.getJsonObject(i).getJsonObject("file");
             if (getJson.getJsonString("name").toString().replaceAll("\"", "").equals(fileName)){
                 foundObject = getJson;
+                System.out.println("Flag 3");
                 break;
             }
         }  
@@ -290,11 +301,13 @@ public class DFS
         if (foundObject == null){
             System.out.println("No such filename exist on the metadata, please touch it first.");
         } else{
+            System.out.println("Flag 2");
             int page = Integer.parseInt(foundObject.getJsonNumber("numberOfPages").toString().replaceAll("\"", ""));
             int maxSize = Integer.parseInt(foundObject.getJsonNumber("pageSize").toString().replaceAll("\"", ""));
             int size = Integer.parseInt(foundObject.getJsonNumber("size").toString().replaceAll("\"", ""));
             JsonArrayBuilder pageList = Json.createArrayBuilder(foundObject.getJsonArray("page"));
             int count = 0;
+            System.out.println(page);
             
             while(((count)*maxSize) < data.length){
                 int remainingLength = 0;
@@ -302,14 +315,15 @@ public class DFS
                 if ((data.length-(count*maxSize)) > maxSize) remainingLength = maxSize;
                 else remainingLength = data.length - (count*maxSize);
                 System.arraycopy(data, (count)*maxSize, dataChunk, 0, remainingLength);
-                InputStream is = new ByteArrayInputStream(dataChunk);
+                InputStream is = new FileStream(dataChunk);
 
-                long guid = md5(fileName + "" + page);
+                long guid = md5("Metadata");
                 ChordMessageInterface peer = chord.locateSuccessor(guid);
-                peer.put(guid, is);
+                long guidGet = md5(fileName + "" + page);
+                peer.put(guidGet, is);
                 JsonObjectBuilder newPage = Json.createObjectBuilder()
                         .add("number", page)
-                        .add("guid", guid)
+                        .add("guid", guidGet)
                         .add("size", remainingLength);
                 pageList.add(newPage);
                 size += remainingLength;
@@ -356,6 +370,7 @@ public class DFS
     
     /** Add in new pages to the file in the metadata, first by creating a new page
      * (touch) and them rum it again appending the data and info in
+     * DEPRECIATED... not really needed and i was thinking way too much on this
      * 
      * @param fileName The name of the file we want to add data into
      * @param data The segment of data that the guid will contain
@@ -376,9 +391,9 @@ public class DFS
 
         if (foundObject == null){
             touch(fileName);
-            append(fileName, data);
+            putFile(fileName, data);
         } else{
-            int count = Integer.parseInt(foundObject.getJsonNumber("numberOfPages").toString().replaceAll("\"", ""));
+            int count = 0;
             int maxSize = Integer.parseInt(foundObject.getJsonNumber("pageSize").toString().replaceAll("\"", ""));
             int size = Integer.parseInt(foundObject.getJsonNumber("size").toString().replaceAll("\"", ""));
             JsonArrayBuilder pageList = Json.createArrayBuilder(foundObject.getJsonArray("page"));
@@ -389,14 +404,15 @@ public class DFS
                 if ((data.length-(count*maxSize)) > maxSize) remainingLength = maxSize;
                 else remainingLength = data.length - (count*maxSize);
                 System.arraycopy(data, (count)*maxSize, dataChunk, 0, remainingLength);
-                InputStream is = new ByteArrayInputStream(dataChunk);
-
-                long guid = md5(fileName + "" + count);
+                InputStream is = new FileStream(dataChunk);
+                
+                long guid = md5("Metadata");
                 ChordMessageInterface peer = chord.locateSuccessor(guid);
-                peer.put(guid, is);
+                long guidGet = md5(fileName + "" + count);
+                peer.put(guidGet, is);
                 JsonObjectBuilder newPage = Json.createObjectBuilder()
                         .add("number", count)
-                        .add("guid", guid)
+                        .add("guid", guidGet)
                         .add("size", remainingLength);
                 pageList.add(newPage);
                 size += remainingLength;
@@ -439,6 +455,12 @@ public class DFS
 
     }
 
+    /**Get the number of pages the file has 
+     * 
+     * @param fileName
+     * @return
+     * @throws Exception
+     */
     public int getSize(String fileName) throws Exception{
 
         JsonArray metaReader = getMetaData();
@@ -470,7 +492,7 @@ public class DFS
      * @throws Exception
      */
     public void writeMetaData(String getString) throws Exception{
-        InputStream is = new ByteArrayInputStream(getString.toString().getBytes());
+        InputStream is = new FileStream(getString.getBytes());
         writeMetaData(is);
     }
 }

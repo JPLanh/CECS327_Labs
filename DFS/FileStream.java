@@ -21,6 +21,13 @@ public class FileStream extends InputStream implements Serializable {
       currentPosition = 0;	  
     }
     
+    public FileStream(byte[] getByte) throws FileNotFoundException, IOException{
+        size = (int)getByte.length;
+        byteBuffer = new byte[size];
+        byteBuffer = getByte;
+        currentPosition = 0;
+    }
+    
     public  FileStream() throws FileNotFoundException    {
       currentPosition = 0;	  
     }

@@ -75,7 +75,8 @@ public class Client
                         dfs.touch(input[1]);
                         System.out.println("Touch process completed");
                     } catch (Exception e){
-                        System.out.println("Error trying to touch file: " + input[1]);
+                        e.printStackTrace();
+                        System.out.println("Error trying to touch file: " + input[1]);                        
                     }
 				} else if (input[0].toLowerCase().equals("tail")){
 					int size = dfs.getSize(input[1]);
@@ -136,8 +137,10 @@ public class Client
                     byte[] data = tempString.getBytes();
                     try{
                         dfs.append(input[1], data);
+                        System.out.println("String has been appended to the file " + input[1]);
                     } catch (Exception e){
                         System.out.println("Such file does not exist");
+                        e.printStackTrace();
                     }
                 }
             }
