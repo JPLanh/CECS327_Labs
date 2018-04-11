@@ -288,12 +288,10 @@ public class DFS
         JsonObject foundObject = null;
 
         JsonArray metaReader = getMetaData();
-        System.out.println("Flag 1");
         for ( int i = 0 ; i < metaReader.size(); i++){
             JsonObject getJson = metaReader.getJsonObject(i).getJsonObject("file");
             if (getJson.getJsonString("name").toString().replaceAll("\"", "").equals(fileName)){
                 foundObject = getJson;
-                System.out.println("Flag 3");
                 break;
             }
         }  
@@ -301,13 +299,11 @@ public class DFS
         if (foundObject == null){
             System.out.println("No such filename exist on the metadata, please touch it first.");
         } else{
-            System.out.println("Flag 2");
             int page = Integer.parseInt(foundObject.getJsonNumber("numberOfPages").toString().replaceAll("\"", ""));
             int maxSize = Integer.parseInt(foundObject.getJsonNumber("pageSize").toString().replaceAll("\"", ""));
             int size = Integer.parseInt(foundObject.getJsonNumber("size").toString().replaceAll("\"", ""));
             JsonArrayBuilder pageList = Json.createArrayBuilder(foundObject.getJsonArray("page"));
             int count = 0;
-            System.out.println(page);
             
             while(((count)*maxSize) < data.length){
                 int remainingLength = 0;
