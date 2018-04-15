@@ -48,11 +48,14 @@ public class Client
                     System.out.printf("%1$-10s %2$-25s %3$-30s\n", "Touch", "{file name}", "Create a new file in the metadata");
                     System.out.printf("%1$-10s %2$-25s %3$-30s\n", "Append", "{file name}{Byte (in array)}", "Add a new page after the last page");
                     System.out.printf("%1$-10s %2$-25s %3$-30s\n", "Head", "{file name}", "Prints out the head of the file");
-					System.out.printf("%1$-10s %2$-25s %3$-30s\n", "Tail", "{file name}", "Rpints out the tail of the file");
+					System.out.printf("%1$-10s %2$-25s %3$-30s\n", "Tail", "{file name}", "Prints out the tail of the file");
 					System.out.printf("%1$-10s %2$-25s %3$-30s\n\n\n", "Get", "{file name}", "Download the specified file from the DFS");
+					System.out.printf("%1$-10s %2$-25s %3$-30s\n\n\n", "Red", "None", "Execute map reduction");
 					
                 } else if (input[0].toLowerCase().equals("ls")){
                     System.out.println(dfs.ls());
+                } else if (input[0].toLowerCase().equals("red")){
+                	dfs.map();
                 } else if (input[0].toLowerCase().equals("exit")){
                     running = false;
                     System.exit(0);
