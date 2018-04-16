@@ -9,7 +9,7 @@ public class Mapper implements MapReduceInterface {
 		String[] words = value.split(" ");
 		for (int i = 0 ; i < words.length; i++){
 			long guidGet = md5(words[i]);
-			context.chord.emitMap(md5(words[i]), words[i]);
+			context.chord.emitMap(md5(words[i]), words[i] + ":"+1);
 		}
 		/**
 		 * for each word in value
@@ -17,7 +17,11 @@ public class Mapper implements MapReduceInterface {
 		 */
 	}
 	
-	public void reduce(Long key, String[] values) throws IOException{
+	public void reduce(Long key, String[] values, Context context) throws IOException{
+
+		String word = values[0].split(":")[0];
+		context.chord.emitReduce(key, word +":"+ values.length);
+		
 		/**
 		 * word = values[0].split(":")[0]
 		 * emit(key, word +":"+ len(values));

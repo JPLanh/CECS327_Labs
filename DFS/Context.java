@@ -31,7 +31,11 @@ public class Context implements ContextInterface{
 	
 	public void reduceContext(long source, ReduceInterface reducer,
 			Context context) throws RemoteException{
-		//TODO
+		if (source != chord.guid){
+			context.setWorkingPeer(chord.guid);
+			reduceContext(source, reducer, context);
+		}
+		
 	}
 	
 	public void mapContext(long page, MapReduceInterface reducer,

@@ -12,6 +12,7 @@ public interface ChordMessageInterface extends Remote
     public long getId() throws RemoteException;
 
     public void emitMap(long key, String value) throws RemoteException;
+    public void emitReduce(long key, String value) throws RemoteException;
     
     public void put(long guidObject, InputStream inputStream) throws IOException, RemoteException;
     public InputStream get(long guidObject) throws IOException, RemoteException;

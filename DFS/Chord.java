@@ -230,12 +230,10 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
 			if (tempList == null) tempList = new ArrayList<String>();
 			tempList.add(value);
 			BMap.put(key, tempList);
-			System.out.println("Key: " + key);
-			System.out.println("List: ");
-			for (int i = 0; i < tempList.size(); i++){
-				System.out.print(" " + tempList.get(i));
-			}
-			System.out.println("[end]");
+	}
+	
+	public void emitReduce(long key, String value) throws RemoteException{
+		BReduceTreeMap.put(key, value);
 	}
 
 	public Chord(int port, long guid) throws RemoteException {
