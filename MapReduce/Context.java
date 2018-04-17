@@ -1,12 +1,17 @@
+<<<<<<< HEAD
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.rmi.*;
 import java.util.HashSet;
+=======
+import java.rmi.*;
+>>>>>>> 18c4b399a49b912c49feca840020a63b47f7404a
 import java.util.Set;
 
 public class Context implements ContextInterface{
 	long n = 0;
+<<<<<<< HEAD
 	Set<Long> set = new HashSet<Long>();
 	Chord chord;
 	
@@ -19,6 +24,15 @@ public class Context implements ContextInterface{
 	}
 	
 	public void completePeer(long page, long n) throws RemoteException
+=======
+	Set<Long> set;
+	
+	public void setWorkingPeer(Long page){
+		set.add(page);
+	}
+	
+	public void completePeer(Long page, Long n) throws RemoteException
+>>>>>>> 18c4b399a49b912c49feca840020a63b47f7404a
 	{
 		this.n += n;
 		set.remove(page);
@@ -29,6 +43,7 @@ public class Context implements ContextInterface{
 		return false;
 	}
 	
+<<<<<<< HEAD
 	public void reduceContext(long source, ReduceInterface reducer,
 			Context context) throws RemoteException{
 		if (source != chord.guid){
@@ -56,4 +71,15 @@ public class Context implements ContextInterface{
 	}
 	
 	
+=======
+	public void reduceContext(Long source, ReduceInterface reducer,
+			Context context) throws RemoteException{
+		//TODO
+	}
+	
+	public void mapContext(Long source, MapReduceInterface reducer,
+			Context context) throws RemoteException{
+		//TODO
+	}
+>>>>>>> 18c4b399a49b912c49feca840020a63b47f7404a
 }
