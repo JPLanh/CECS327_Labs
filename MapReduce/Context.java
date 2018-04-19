@@ -1,22 +1,24 @@
-<<<<<<< HEAD
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.rmi.*;
+import java.util.ArrayList;
 import java.util.HashSet;
-=======
-import java.rmi.*;
->>>>>>> 18c4b399a49b912c49feca840020a63b47f7404a
+import java.util.List;
 import java.util.Set;
+import java.util.TreeMap;
 
 public class Context implements ContextInterface{
 	long n = 0;
-<<<<<<< HEAD
 	Set<Long> set = new HashSet<Long>();
 	Chord chord;
+    TreeMap<Long, String> BReduceTreeMap;
+    TreeMap<Long, List<String>> BMap;
 	
 	public Context(Chord chord){
 		this.chord = chord;
+		BReduceTreeMap = new TreeMap<Long, String>();
+		BMap = new TreeMap<Long, List<String>>();
 	}
 	
 	public void setWorkingPeer(long page){
@@ -24,15 +26,6 @@ public class Context implements ContextInterface{
 	}
 	
 	public void completePeer(long page, long n) throws RemoteException
-=======
-	Set<Long> set;
-	
-	public void setWorkingPeer(Long page){
-		set.add(page);
-	}
-	
-	public void completePeer(Long page, Long n) throws RemoteException
->>>>>>> 18c4b399a49b912c49feca840020a63b47f7404a
 	{
 		this.n += n;
 		set.remove(page);
@@ -43,8 +36,7 @@ public class Context implements ContextInterface{
 		return false;
 	}
 	
-<<<<<<< HEAD
-	public void reduceContext(long source, ReduceInterface reducer,
+	public void reduceContext(long source, MapReduceInterface reducer,
 			Context context) throws RemoteException{
 		if (source != chord.guid){
 			context.setWorkingPeer(chord.guid);
@@ -70,16 +62,19 @@ public class Context implements ContextInterface{
 		reducer.map(page, new String(readByte), context);	
 	}
 	
+	   public void emitMap(long key, String value)  throws RemoteException{
+	       if (chord.isKeyInOpenInterval(key, chord.predecessor.getId(), chord.successor.getId())){
+	           List<String> tempList = BMap.get(key);
+	           if (tempList == null) tempList = new ArrayList<String>();
+	           tempList.add(value);
+	           BMap.put(key, tempList);	           
+	       } else {
+	           chord = (Chord) chord.locateSuccessor(key);
+	       }
+	   }
+	   
+	   public void emitReduce(long key, String value) throws RemoteException{
+	       //TODO
+	   }
 	
-=======
-	public void reduceContext(Long source, ReduceInterface reducer,
-			Context context) throws RemoteException{
-		//TODO
-	}
-	
-	public void mapContext(Long source, MapReduceInterface reducer,
-			Context context) throws RemoteException{
-		//TODO
-	}
->>>>>>> 18c4b399a49b912c49feca840020a63b47f7404a
 }
