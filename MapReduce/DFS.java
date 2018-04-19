@@ -492,12 +492,13 @@ public class DFS
 		writeMetaData(is);
 	}
 
-	public void map() throws Exception{
+	public void runMapReduce() throws Exception{
 		Context context = new Context(chord);
 		Mapper mapReduce = new Mapper();
 
-		JsonArray metaReader =  getMetaData();
-		for ( int i = 0 ; i < metaReader.size(); i++){
+		JsonArray metaReader = getMetaData();
+
+		for ( JsonValue j :metaReader ){
 			JsonArray getJsonPage = metaReader.getJsonObject(i).getJsonObject("file").getJsonArray("page");
 			for (int j = 0; j < getJsonPage.size(); j++){         
 				long  guidGet = getJsonPage.get(j).asJsonObject().getJsonNumber("guid").longValue();

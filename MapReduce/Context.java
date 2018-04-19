@@ -62,19 +62,26 @@ public class Context implements ContextInterface{
 		reducer.map(page, new String(readByte), context);	
 	}
 	
-	   public void emitMap(long key, String value)  throws RemoteException{
-	       if (chord.isKeyInOpenInterval(key, chord.predecessor.getId(), chord.successor.getId())){
-	           List<String> tempList = BMap.get(key);
-	           if (tempList == null) tempList = new ArrayList<String>();
-	           tempList.add(value);
-	           BMap.put(key, tempList);	           
-	       } else {
-	           chord = (Chord) chord.locateSuccessor(key);
-	       }
-	   }
+	public void emitMap(long key, String value)  throws RemoteException{
+	    if (chord.isKeyInOpenInterval(key, chord.predecessor.getId(), chord.successor.getId())){
+	        List<String> tempList = BMap.get(key);
+	        if (tempList == null) tempList = new ArrayList<String>();
+	        tempList.add(value);
+	        BMap.put(key, tempList);	           
+	    } else {
+	        chord = (Chord) chord.locateSuccessor(key);
+	    }
+	}
 	   
-	   public void emitReduce(long key, String value) throws RemoteException{
-	       //TODO
-	   }
+	public void emitReduce(long key, String value) throws RemoteException{
+		if (chord.isKeyInOpenInterval(key, chord.predecessor.getId(), chord.successor.getId())){
+			// insert in the BReduce
+			BReduceTreeMap.put(key, value);
+		}
+	   	else{
+	   		chord = (Chord) chord.locateSuccessor(key);
+	   		chord.emitReduce(key, value);
+	   	}
+	}
 	
 }
