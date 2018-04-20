@@ -36,7 +36,7 @@ public class Context implements ContextInterface{
 		return false;
 	}
 	
-	public void reduceContext(long source, MapReduceInterface reducer,
+	public void reduceContext(long source, ReduceInterface reducer,
 			Context context) throws RemoteException{
 		if (source != chord.guid){
 			context.setWorkingPeer(chord.guid);
@@ -84,11 +84,6 @@ public class Context implements ContextInterface{
 	   	}
 	}
 
-	@Override
-	public void reduceContext(long source, ReduceInterface reducer,
-			Context context) throws RemoteException {
-		// TODO Auto-generated method stub
-		
-	}
+
 	
 }
