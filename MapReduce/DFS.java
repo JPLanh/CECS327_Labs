@@ -498,10 +498,10 @@ public class DFS
 
 		JsonArray metaReader = getMetaData();
 
-		for ( JsonValue j :metaReader ){
-			JsonArray getJsonPage = metaReader.getJsonObject(i).getJsonObject("file").getJsonArray("page");
-			for (int j = 0; j < getJsonPage.size(); j++){         
-				long  guidGet = getJsonPage.get(j).asJsonObject().getJsonNumber("guid").longValue();
+		for ( int j = 0; j < metaReader.size(); j++ ){
+			JsonArray getJsonPage = metaReader.getJsonObject(j).getJsonObject("file").getJsonArray("page");
+			for (int i = 0; i < getJsonPage.size(); i++){         
+				long  guidGet = getJsonPage.get(i).asJsonObject().getJsonNumber("guid").longValue();
 				context.setWorkingPeer(guidGet);
 				context.mapContext(guidGet, mapReduce, context);
 			}

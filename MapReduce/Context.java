@@ -83,5 +83,12 @@ public class Context implements ContextInterface{
 	   		chord.emitReduce(key, value);
 	   	}
 	}
+
+	@Override
+	public void reduceContext(long source, ReduceInterface reducer,
+			Context context) throws RemoteException {
+		// TODO Auto-generated method stub
+		
+	}
 	
 }
