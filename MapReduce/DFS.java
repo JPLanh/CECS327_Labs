@@ -508,4 +508,19 @@ public class DFS
 		}
 		
 	}
+		public void map() throws Exception{
+		Context context = new Context(chord);
+		Mapper mapReduce = new Mapper();
+
+		JsonArray metaReader =  getMetaData();
+		for ( int i = 0 ; i < metaReader.size(); i++){
+			JsonArray getJsonPage = metaReader.getJsonObject(i).getJsonObject("file").getJsonArray("page");
+			for (int j = 0; j < getJsonPage.size(); j++){         
+				long  guidGet = getJsonPage.get(j).asJsonObject().getJsonNumber("guid").longValue();
+				context.setWorkingPeer(guidGet);
+				context.mapContext(guidGet, mapReduce, context);
+			}
+		}
+		
+	}
 }
