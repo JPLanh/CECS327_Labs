@@ -494,6 +494,9 @@ public class DFS
         writeMetaData(is);
     }
 
+    public void getMaps() throws RemoteException{
+    	System.out.println("maps: " + chord.BMap.size());
+    }
     public void printFingers() throws RemoteException{
         chord.printFinger();
     }
@@ -505,7 +508,7 @@ public class DFS
             if(metaReader.getJsonObject(i).getJsonObject("file").getJsonString("name").toString().replaceAll("\"", "").equals(fileName)){
                 JsonArray getJsonPage = metaReader.getJsonObject(i).getJsonObject("file").getJsonArray("page");
 
-                
+//Get the page and get it ready to be dealt with                
                 Thread mappingThread = new Thread(){
                     public void run(){
                         ChordMessageInterface peer = null;
@@ -521,7 +524,7 @@ public class DFS
                         }             
                         try {
                             while(!chord.isPhaseCompleted());
-                            chord.reduceContext(chord.guid, mapReduce, peer);
+                            chord.reduceContext(peer.getId(), mapReduce, peer);
                             System.out.println("Reduce complete");
                         } catch (RemoteException e) {
                             // TODO Auto-generated catch block

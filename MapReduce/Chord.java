@@ -327,7 +327,7 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
             }
         }
     }
-    
+    //Reads the byte from the pages
     public void mapContext(Long page, MapReduceInterface reducer,
             ChordMessageInterface context) throws RemoteException{
         try {
@@ -352,8 +352,7 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
     }
     
        public void emitMap(long key, String value)  throws RemoteException{
-//           System.out.println("emitMap key and such: " + predecessor.getId() +
-//                    " | " + key + " | " + successor.getId());
+//    	   System.out.println(predecessor.getId() + " < " + key + " < " + successor.getId());
            if (isKeyInOpenInterval(key, predecessor.getId(), successor.getId())){
                List<String> tempList = BMap.get(key);
                if (tempList == null) tempList = new ArrayList<String>();

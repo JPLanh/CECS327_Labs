@@ -7,6 +7,7 @@ import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
 public class Mapper implements MapReduceInterface, Serializable {
+	//Maps the word
 	public void map(Long key, String value, ChordMessageInterface context) throws IOException{
 		String[] words = value.split(" ");
 		for (int i = 0 ; i < words.length; i++){
@@ -17,12 +18,9 @@ public class Mapper implements MapReduceInterface, Serializable {
 	}
 	
 	public void reduce(Long key, List<String> values, ChordMessageInterface context) throws IOException{
-		context.emitReduce(key, values.get(0) +":"+values.size());		
-		System.out.println(values.get(0) + ":" + values.size());
-		/**
-		 * word = values[0].split(":")[0]
-		 * emit(key, word +":"+ len(values));
-		 */
+		String[] wordPair = values.get(0).split(":");
+		context.emitReduce(key, wordPair[0] +":"+values.size());		
+		System.out.println(wordPair[0] + ":" + values.size());
 	}
 
 	private long md5(String objectName)

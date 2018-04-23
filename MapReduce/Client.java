@@ -54,6 +54,8 @@ public class Client
 					
                 } else if (input[0].toLowerCase().equals("ls")){
                     System.out.println(dfs.ls());
+                } else if (input[0].toLowerCase().equals("maps")){
+                    dfs.getMaps();
                 } else if (input[0].toLowerCase().equals("finger")){
                     dfs.printFingers();
                 } else if (input[0].toLowerCase().equals("exit")){
