@@ -54,8 +54,8 @@ public class Client
 					
                 } else if (input[0].toLowerCase().equals("ls")){
                     System.out.println(dfs.ls());
-                } else if (input[0].toLowerCase().equals("red")){
-                	dfs.map();
+                } else if (input[0].toLowerCase().equals("finger")){
+                    dfs.printFingers();
                 } else if (input[0].toLowerCase().equals("exit")){
                     running = false;
                     System.exit(0);
@@ -73,7 +73,9 @@ public class Client
 					}	else {
 							System.out.println(Arrays.toString(dfs.head(input[1])));
 					}
-                }else if (input[0].toLowerCase().equals("touch")){
+                } else if (input[0].toLowerCase().equals("red")){
+                    dfs.runMapReduce(input[1]);
+                } else if (input[0].toLowerCase().equals("touch")){
                     try{
                         dfs.touch(input[1]);
                         System.out.println("Touch process completed");
