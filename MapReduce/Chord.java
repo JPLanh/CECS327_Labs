@@ -10,12 +10,14 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
 {
 	public static final int M = 2;
 
+	long numOfRecord;
 	Registry registry;    // rmi registry for lookup the remote objects.
 	ChordMessageInterface successor;
 	ChordMessageInterface predecessor;
 	ChordMessageInterface[] finger;
 	int nextFinger;
 	long guid;   		// GUID (i)
+    Set<Long> set = new HashSet<Long>();
 	public TreeMap<Long, String> BReduceTreeMap;
 	public TreeMap<Long, List<String>> BMap;
 
@@ -78,6 +80,9 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
 		return predecessor;
 	}
 
+	public ChordMessageInterface getSuccessor() throws RemoteException{
+	    return successor;
+	}
 	public ChordMessageInterface locateSuccessor(long key) throws RemoteException {
 		if (key == guid)
 			throw new IllegalArgumentException("Key must be distinct that  " + guid);
@@ -225,17 +230,6 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
 		}
 	}
 
-	public void emitMap(long key, String value)  throws RemoteException{
-			List<String> tempList = BMap.get(key);
-			if (tempList == null) tempList = new ArrayList<String>();
-			tempList.add(value);
-			BMap.put(key, tempList);
-	}
-	
-	public void emitReduce(long key, String value) throws RemoteException{
-		BReduceTreeMap.put(key, value);
-	}
-
 	public Chord(int port, long guid) throws RemoteException {
 
 		BReduceTreeMap = new  TreeMap<Long, String>();
@@ -292,4 +286,95 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
 			System.out.println("Cannot retrive id");
 		}
 	}
+
+    public void setWorkingPeer(Long page)  throws RemoteException{
+        set.add(page);
+    }
+    
+    public void completePeer(Long page, Long n) throws RemoteException
+    {
+        this.numOfRecord += n;
+        set.remove(page);
+    }
+    
+    public boolean isPhaseCompleted() throws RemoteException{
+        return set.isEmpty();
+    }
+    
+    public void printFinger() throws RemoteException{
+        System.out.println("Predecessor: " + predecessor.getId());
+        System.out.println("sucessor: " + successor.getId());
+    }
+    
+    public void reduceContext(Long source, MapReduceInterface reducer,
+            ChordMessageInterface context) throws RemoteException{
+//        System.out.println(source);
+        if (source != guid){
+            successor.reduceContext(source, reducer, context);
+//            System.out.println("Source: " + guid);
+//            context.setWorkingPeer(guid);
+        }
+        setWorkingPeer(source);
+        Set<Long> setOfKeys = BMap.keySet();
+//        System.out.println(setOfKeys.size());
+        for (Long key : setOfKeys){
+//            System.out.println("Key: " + key);
+            List<String> getList = BMap.get(key);
+            try {
+                reducer.reduce(key, getList, context);
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+        }
+        set.remove(source);
+    }
+    
+    public void mapContext(Long page, MapReduceInterface reducer,
+            ChordMessageInterface context) throws RemoteException{
+        try {
+            setWorkingPeer(page);
+            InputStream is = context.get(page);
+            ByteArrayOutputStream byteBuffer = new ByteArrayOutputStream();
+            int nRead = is.read();
+            while (nRead != 0){
+                byteBuffer.write(nRead);
+                nRead = is.read();
+            }
+            byteBuffer.flush();
+            is.close();
+            byte[] readByte = new byte[1024];
+            readByte = byteBuffer.toByteArray();
+            reducer.map(page, new String(readByte), context);   
+            set.remove(page);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+    
+       public void emitMap(long key, String value)  throws RemoteException{
+           if (isKeyInOpenInterval(key, predecessor.getId(), successor.getId())){
+               List<String> tempList = BMap.get(key);
+               if (tempList == null) tempList = new ArrayList<String>();
+               tempList.add(value);
+               BMap.put(key, tempList);      
+           } else {
+               ChordMessageInterface peer = locateSuccessor(key);
+               peer.emitMap(key, value);
+           }
+       }
+       
+       public void emitReduce(long key, String value) throws RemoteException{
+           if(isKeyInOpenInterval(key, predecessor.getId(), successor.getId())){
+               BReduceTreeMap.put(key, value);
+           } else {
+               ChordMessageInterface peer = locateSuccessor(key);
+               peer.emitReduce(key, value);
+           }
+       }
+       
+       public TreeMap<Long, String> getReduce()  throws RemoteException{
+           return BReduceTreeMap;
+       }
 }
