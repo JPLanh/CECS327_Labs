@@ -1,0 +1,1 @@
+java -classpath .;./javax.json-1.1.jar Client 23246
