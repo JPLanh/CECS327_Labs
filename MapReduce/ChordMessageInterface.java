@@ -30,5 +30,6 @@ public interface ChordMessageInterface extends Remote
     public void mapContext(Long page, MapReduceInterface mapper,
             ChordMessageInterface context) throws RemoteException;
     
-    public TreeMap<Long, String> getReduce() throws RemoteException;
+    public TreeMap<Long, String> getPreReduce() throws RemoteException;
+    public TreeMap<Long, String> getSucReduce() throws RemoteException;
 }

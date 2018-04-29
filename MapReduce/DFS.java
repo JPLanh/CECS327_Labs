@@ -164,7 +164,7 @@ public class DFS
                 .add("file", Json.createObjectBuilder()
                         .add("name", fileName)
                         .add("numberOfPages", 0)
-                        .add("pageSize", 16384)
+                        .add("pageSize", 2048)
                         .add("size", 0)
                         .add("page", Json.createArrayBuilder()));
 
@@ -637,27 +637,49 @@ public class DFS
     }
 
     public void constructReduceMeta(String fileName, ChordMessageInterface initial, ChordMessageInterface current) throws Exception{
-        System.out.println();
         if (initial.getId() == current.getId()){
-            TreeMap<Long, String> tempTReduceMap = current.getReduce();
+            TreeMap<Long, String> tempTReduceMap = current.getPreReduce();
             String mapCompile = "";
             for (Long getLong : tempTReduceMap.keySet()){
                 mapCompile = mapCompile.concat(getLong + ": " + tempTReduceMap.get(getLong) +"\n");
             }
             if (mapCompile.length() != 0){
-                long guidTemp = md5(fileName + current.getId());
+                long guidTemp = md5(fileName + current.getId() + "pre");
                 localAppend(fileName + "_reduce", mapCompile.getBytes(), guidTemp);                        
                 current.put(guidTemp, new FileStream( mapCompile.getBytes()));
             }
+
+            tempTReduceMap = current.getSucReduce();
+            mapCompile = "";
+            for (Long getLong : tempTReduceMap.keySet()){
+                mapCompile = mapCompile.concat(getLong + ": " + tempTReduceMap.get(getLong) +"\n");
+            }
+            if (mapCompile.length() != 0){
+                long guidTemp = md5(fileName + current.getId() + "suc");
+                localAppend(fileName + "_reduce", mapCompile.getBytes(), guidTemp);                        
+                current.put(guidTemp, new FileStream( mapCompile.getBytes()));
+            }
+            
             System.out.println("Reduce Metadata information has been compiled");
         } else {
-            TreeMap<Long, String> tempTReduceMap = current.getReduce();
+            TreeMap<Long, String> tempTReduceMap = current.getPreReduce();
             String mapCompile = "";
             for (Long getLong : tempTReduceMap.keySet()){
                 mapCompile = mapCompile.concat(getLong + ": " + tempTReduceMap.get(getLong) +"\n");
             }
             if (mapCompile.length() != 0){
-                long guidTemp = md5(fileName + current.getId());
+                long guidTemp = md5(fileName + current.getId() + "pre");
+                localAppend(fileName + "_reduce", mapCompile.getBytes(), guidTemp);                        
+                current.put(guidTemp, new FileStream( mapCompile.getBytes()));
+            }
+
+            tempTReduceMap = current.getSucReduce();
+            mapCompile = "";
+            for (Long getLong : tempTReduceMap.keySet()){
+                mapCompile = mapCompile.concat(getLong + ": " + tempTReduceMap.get(getLong) +"\n");
+            }
+            if (mapCompile.length() != 0){
+                long guidTemp = md5(fileName + current.getId() + "suc");
                 localAppend(fileName + "_reduce", mapCompile.getBytes(), guidTemp);                        
                 current.put(guidTemp, new FileStream( mapCompile.getBytes()));
             }
