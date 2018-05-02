@@ -306,6 +306,12 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
         System.out.println("sucessor: " + successor.getId());
     }
     
+    /**
+     * @param source the source of the context to be reduced
+     * @param reducer the map reducer interface
+     * @param context the context of the reduce
+     * @throws RemoteException
+     */
     public void reduceContext(Long source, MapReduceInterface reducer,
             ChordMessageInterface context) throws RemoteException{
 //        System.out.println(source);
@@ -330,6 +336,13 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
         set.remove(source);
     }
     
+    /**
+     * creates the map context file for a page
+     * 
+     * @param page the sequence of the page to be reduced
+     * @param reducer the map reducer interface
+     * @param context the chord message interface
+     */
     public void mapContext(Long page, MapReduceInterface reducer,
             ChordMessageInterface context) throws RemoteException{
         try {
@@ -353,6 +366,13 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
 
     }
     
+    
+    /**
+     * places the string values into the lists
+     * @param key the key of the tree map
+     * @param value the string values of the file
+     * @throws RemoteException
+     */
        public void emitMap(long key, String value)  throws RemoteException{
            if (isKeyInOpenInterval(key, predecessor.getId(), successor.getId())){
                List<String> tempList = BMap.get(key);
@@ -365,6 +385,11 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
            }
        }
        
+       /**
+        * @param key the key of the tree map
+        * @param value the string value of the file
+        * @throws RemoteException 
+        */
        public void emitReduce(long key, String value) throws RemoteException{
            if(isKeyInOpenInterval(key, predecessor.getId(), successor.getId())){
                BReduceTreeMap.put(key, value);
@@ -374,6 +399,10 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
            }
        }
        
+       /**
+        * 
+        * @return The tree map reduced
+        */
        public TreeMap<Long, String> getReduce()  throws RemoteException{
            return BReduceTreeMap;
        }

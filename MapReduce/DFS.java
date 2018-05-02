@@ -636,6 +636,14 @@ public class DFS
         chord.printFinger();
     }
 
+    /**
+     * constructing the map reduce meta data
+     * 
+     * @param fileName	the file that is being reduced
+     * @param initial	the initial chord interface
+     * @param current 	the current chord interface
+     * @throws Exception
+     */
     public void constructReduceMeta(String fileName, ChordMessageInterface initial, ChordMessageInterface current) throws Exception{
         if (initial.getId() == current.getId()){
             TreeMap<Long, String> tempTReduceMap = current.getPreReduce();
@@ -687,6 +695,10 @@ public class DFS
         }        
     }
 
+    /**
+     * starts the thread to map reduce of a file name
+     * @param fileName the file to be map reduced
+     */
     public void runMapReduce(String fileName) throws Exception{
         Mapper mapReduce = new Mapper();
 
