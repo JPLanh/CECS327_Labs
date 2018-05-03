@@ -632,6 +632,11 @@ public class DFS
         return metaReader;    
     }
 
+	/**
+	* prints out the fingers of the Chord
+	* @throws RemoteException
+	*
+	*/
     public void printFingers() throws RemoteException{
         chord.printFinger();
     }
