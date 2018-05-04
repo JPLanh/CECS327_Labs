@@ -89,6 +89,16 @@ public class DFS
         peer.put(guid, stream);
     }
 
+    /**Write a string into a input stream and put the inputstream into the metadata
+     * 
+     * @param getString the string that needs to be put into the metadata
+     * @throws Exception
+     */
+    public void writeMetaData(String getString) throws Exception{
+        InputStream is = new FileStream(getString.getBytes());
+        writeMetaData(is);
+    }
+
     /** Rename a file
      * 
      * @param oldName name of the old file
@@ -154,6 +164,33 @@ public class DFS
                 .add("file", Json.createObjectBuilder()
                         .add("name", fileName)
                         .add("numberOfPages", 0)
+                        .add("pageSize", 2048)
+                        .add("size", 0)
+                        .add("page", Json.createArrayBuilder()));
+
+        JsonArrayBuilder newMetaJsonArray = Json.createArrayBuilder(metaReader)
+                .add(newFile.build());
+        JsonArray newMeta = newMetaJsonArray.build();
+
+        JsonObject newMetaData = Json.createObjectBuilder()
+                .add("metadata", newMeta).build();
+
+        writeMetaData(newMetaData.toString());
+    }
+
+    /** Create the filename by adding a new entry to the metadata
+     *
+     * @param fileName the name of the new file
+     * @throws Exception
+     */
+    public void localTouch(String fileName) throws Exception
+    {
+        JsonArray metaReader = getMetaData();
+
+        JsonObjectBuilder newFile = Json.createObjectBuilder()
+                .add("file", Json.createObjectBuilder()
+                        .add("name", fileName)
+                        .add("numberOfPages", 0)
                         .add("pageSize", 16384)
                         .add("size", 0)
                         .add("page", Json.createArrayBuilder()));
@@ -207,6 +244,36 @@ public class DFS
      * @return the byte of array for a segment of the file
      * @throws Exception
      */
+    public byte[] read(String fileName, long guidGet) throws Exception
+    {   
+        JsonArray metaReader =  getMetaData();
+        for ( int i = 0 ; i < metaReader.size(); i++){
+            JsonObject getJson = metaReader.getJsonObject(i).getJsonObject("file");
+            ChordMessageInterface peer = chord.locateSuccessor(guidGet);
+            InputStream is = peer.get(guidGet);
+
+            ByteArrayOutputStream byteBuffer = new ByteArrayOutputStream();
+            int nRead = is.read();
+            while (nRead != 0){
+                byteBuffer.write(nRead);
+                nRead = is.read();
+            }
+            byteBuffer.flush();
+            is.close();
+            return byteBuffer.toByteArray();
+        }
+
+        return null;
+    }
+
+
+    /** Read the small byte of data from the peer in according to it's page number.
+     * 
+     * @param fileName The file that wants to be read
+     * @param pageNumber The page to read from
+     * @return the byte of array for a segment of the file
+     * @throws Exception
+     */
     public byte[] read(String fileName, int pageNumber) throws Exception
     {   
         JsonArray metaReader =  getMetaData();
@@ -219,10 +286,17 @@ public class DFS
                         if (getJsonPage.get(j).asJsonObject().getJsonNumber("number").intValue() == (pageNumber)){
                             long  guidGet = getJsonPage.get(j).asJsonObject().getJsonNumber("guid").longValue();
 
-                            long guid = md5("Metadata");
-                            ChordMessageInterface peer = chord.locateSuccessor(guid);
-                            InputStream is = peer.get(guidGet);
-
+                            InputStream is = null;
+                            try{
+                                long guid = md5("Metadata");
+                                ChordMessageInterface peer = chord.locateSuccessor(guid);
+                                is = peer.get(guidGet);
+                            } catch (RemoteException e){
+                                System.out.println("Not on host, looking in other peers");
+                                ChordMessageInterface peer = chord.locateSuccessor(guidGet);
+                                System.out.println(guidGet + " in the context: " + peer.getId());
+                                is = peer.get(guidGet);                                
+                            }
                             ByteArrayOutputStream byteBuffer = new ByteArrayOutputStream();
                             int nRead = is.read();
                             while (nRead != 0){
@@ -328,6 +402,80 @@ public class DFS
                 page++;
                 count++;
             }
+
+            //Delete the old one
+            JsonArray metaReaderBeta = getMetaData();
+            JsonArrayBuilder newFileMeta = Json.createArrayBuilder();
+            for (int i = 0; i < metaReaderBeta.size();i++){
+                JsonObject getJsonBeta = metaReaderBeta.getJsonObject(i).getJsonObject("file");
+                if (getJsonBeta.getJsonString("name").toString().replaceAll("\"", "").equals(fileName)){
+                } else {                            
+                    newFileMeta.add(Json.createObjectBuilder(metaReader.getJsonObject(i)).build());
+                }
+            }       
+            JsonObjectBuilder getNewMeta = Json.createObjectBuilder()
+                    .add("metadata", newFileMeta.build());
+            writeMetaData(getNewMeta.build().toString());
+            //Write the new one without removing the GUID
+
+            metaReader = getMetaData();
+            JsonObjectBuilder newFile = Json.createObjectBuilder()
+                    .add("file", Json.createObjectBuilder()
+                            .add("name", fileName)
+                            .add("numberOfPages", page)
+                            .add("pageSize", maxSize)
+                            .add("size", size)
+                            .add("page", pageList.build()));
+
+            JsonArrayBuilder newMetaJsonArray = Json.createArrayBuilder(metaReader)
+                    .add(newFile.build());
+            JsonArray newMeta = newMetaJsonArray.build();
+
+            JsonObject newMetaData = Json.createObjectBuilder()
+                    .add("metadata", newMeta).build();
+
+            writeMetaData(newMetaData.toString());
+        }
+
+    }
+
+    /** Appends a new page to a file with the following bytes
+     * 
+     * @param fileName The name of the file we want to add data into
+     * @param data The segment of data that the guid will contain
+     * @throws Exception
+     */ 
+    public void localAppend(String fileName, byte[] data, long reduceDataGuid) throws Exception{
+
+        JsonObject foundObject = null;
+
+        JsonArray metaReader = getMetaData();
+        for ( int i = 0 ; i < metaReader.size(); i++){
+            JsonObject getJson = metaReader.getJsonObject(i).getJsonObject("file");
+            if (getJson.getJsonString("name").toString().replaceAll("\"", "").equals(fileName)){
+                foundObject = getJson;
+                break;
+            }
+        }  
+
+        if (foundObject == null){
+            System.out.println("No such filename exist on the metadata, please touch it first.");
+        } else{
+            int page = Integer.parseInt(foundObject.getJsonNumber("numberOfPages").toString().replaceAll("\"", ""));
+            int maxSize = Integer.parseInt(foundObject.getJsonNumber("pageSize").toString().replaceAll("\"", ""));
+            int size = Integer.parseInt(foundObject.getJsonNumber("size").toString().replaceAll("\"", ""));
+            JsonArrayBuilder pageList = Json.createArrayBuilder(foundObject.getJsonArray("page"));
+            int count = 0;
+
+
+            JsonObjectBuilder newPage = Json.createObjectBuilder()
+                    .add("number", page)
+                    .add("guid", reduceDataGuid)
+                    .add("size", data.length);
+            pageList.add(newPage);
+            size += data.length;
+            page++;
+            count++;
 
             //Delete the old one
             JsonArray metaReaderBeta = getMetaData();
@@ -484,23 +632,65 @@ public class DFS
         return metaReader;    
     }
 
-    /**Write a string into a input stream and put the inputstream into the metadata
-     * 
-     * @param getString the string that needs to be put into the metadata
-     * @throws Exception
-     */
-    public void writeMetaData(String getString) throws Exception{
-        InputStream is = new FileStream(getString.getBytes());
-        writeMetaData(is);
-    }
-
-    public void getMaps() throws RemoteException{
-    	System.out.println("maps: " + chord.BMap.size());
-    }
     public void printFingers() throws RemoteException{
         chord.printFinger();
     }
-    public void runMapReduce(String fileName) throws Exception{       
+
+    public void printTree() throws RemoteException{
+        chord.printTree();
+    }
+    public void constructReduceMeta(String fileName, ChordMessageInterface initial, ChordMessageInterface current) throws Exception{
+        if (initial.getId() == current.getId()){
+            TreeMap<Long, String> tempTReduceMap = current.getPreReduce();
+            String mapCompile = "";
+            for (Long getLong : tempTReduceMap.keySet()){
+                mapCompile = mapCompile.concat(getLong + ": " + tempTReduceMap.get(getLong) +"\n");
+            }
+            if (mapCompile.length() != 0){
+                long guidTemp = md5(fileName + current.getId() + "pre");
+                localAppend(fileName + "_reduce", mapCompile.getBytes(), guidTemp);                        
+                current.put(guidTemp, new FileStream( mapCompile.getBytes()));
+            }
+
+            tempTReduceMap = current.getSucReduce();
+            mapCompile = "";
+            for (Long getLong : tempTReduceMap.keySet()){
+                mapCompile = mapCompile.concat(getLong + ": " + tempTReduceMap.get(getLong) +"\n");
+            }
+            if (mapCompile.length() != 0){
+                long guidTemp = md5(fileName + current.getId() + "suc");
+                localAppend(fileName + "_reduce", mapCompile.getBytes(), guidTemp);                        
+                current.put(guidTemp, new FileStream( mapCompile.getBytes()));
+            }
+
+            System.out.println("Reduce Metadata information has been compiled");
+        } else {
+            TreeMap<Long, String> tempTReduceMap = current.getPreReduce();
+            String mapCompile = "";
+            for (Long getLong : tempTReduceMap.keySet()){
+                mapCompile = mapCompile.concat(getLong + ": " + tempTReduceMap.get(getLong) +"\n");
+            }
+            if (mapCompile.length() != 0){
+                long guidTemp = md5(fileName + current.getId() + "pre");
+                localAppend(fileName + "_reduce", mapCompile.getBytes(), guidTemp);                        
+                current.put(guidTemp, new FileStream( mapCompile.getBytes()));
+            }
+
+            tempTReduceMap = current.getSucReduce();
+            mapCompile = "";
+            for (Long getLong : tempTReduceMap.keySet()){
+                mapCompile = mapCompile.concat(getLong + ": " + tempTReduceMap.get(getLong) +"\n");
+            }
+            if (mapCompile.length() != 0){
+                long guidTemp = md5(fileName + current.getId() + "suc");
+                localAppend(fileName + "_reduce", mapCompile.getBytes(), guidTemp);                        
+                current.put(guidTemp, new FileStream( mapCompile.getBytes()));
+            }
+            constructReduceMeta(fileName, initial, current.getSuccessor());
+        }        
+    }
+
+    public void runMapReduce(String fileName) throws Exception{
         Mapper mapReduce = new Mapper();
 
         JsonArray metaReader =  getMetaData();
@@ -508,9 +698,9 @@ public class DFS
             if(metaReader.getJsonObject(i).getJsonObject("file").getJsonString("name").toString().replaceAll("\"", "").equals(fileName)){
                 JsonArray getJsonPage = metaReader.getJsonObject(i).getJsonObject("file").getJsonArray("page");
 
-//Get the page and get it ready to be dealt with                
                 Thread mappingThread = new Thread(){
                     public void run(){
+                        //                System.out.println("Initializing mapping sequences");
                         ChordMessageInterface peer = null;
                         for (int j = 0; j < getJsonPage.size(); j++){     
                             long  guidGet = getJsonPage.get(j).asJsonObject().getJsonNumber("guid").longValue();
@@ -521,22 +711,41 @@ public class DFS
                                 // TODO Auto-generated catch block
                                 e1.printStackTrace();
                             }
-                        }             
+                        }     
                         try {
-                            while(!chord.isPhaseCompleted());
-                            chord.reduceContext(peer.getId(), mapReduce, peer);
-                            System.out.println("Reduce complete");
+                            sleep(1000);
+                            while(!peer.isPhaseCompleted());
+                            
+                            System.out.println("Mapping sequences completed, now starting reducing sequence");
+                            chord.reduceContext(chord.getId(), mapReduce, peer);
                         } catch (RemoteException e) {
                             // TODO Auto-generated catch block
                             e.printStackTrace();
-                        }    
+                        } catch (InterruptedException e) {
+                            // TODO Auto-generated catch block
+                            e.printStackTrace();
+                        }         
+//                        try {
+//                            sleep(1000);
+//                            while(!peer.isPhaseCompleted());
+//                            System.out.println("Now constructing metadata");
+//                            touch(fileName + "_reduce");
+//                            constructReduceMeta(fileName, chord, chord.getSuccessor());
+//                        } catch (IOException e) {
+//                            // TODO Auto-generated catch block
+//                            e.printStackTrace();
+//                        } catch (InterruptedException e1) {
+//                            // TODO Auto-generated catch block
+//                            e1.printStackTrace();
+//                        } catch (Exception e) {
+//                            // TODO Auto-generated catch block
+//                            e.printStackTrace();
+//                        }             
                     }
                 };
-                
+                //
                 mappingThread.start();
-;            
             }
         }
-
     }
 }

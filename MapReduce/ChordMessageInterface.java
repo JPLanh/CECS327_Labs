@@ -1,4 +1,5 @@
 import java.rmi.*;
+import java.util.TreeMap;
 import java.io.*;
 
 public interface ChordMessageInterface extends Remote
@@ -21,7 +22,7 @@ public interface ChordMessageInterface extends Remote
     public void delete(long guidObject) throws IOException, RemoteException;
 
     public void setWorkingPeer(Long page) throws RemoteException;
-    public void completePeer(Long page, Long n) throws RemoteException;
+    public void completePeer(Long page, int n) throws RemoteException;
     public boolean isPhaseCompleted() throws RemoteException;
     
     public void reduceContext(Long source, MapReduceInterface reducer,
@@ -29,5 +30,6 @@ public interface ChordMessageInterface extends Remote
     public void mapContext(Long page, MapReduceInterface mapper,
             ChordMessageInterface context) throws RemoteException;
     
-    
+    public TreeMap<Long, String> getPreReduce() throws RemoteException;
+    public TreeMap<Long, String> getSucReduce() throws RemoteException;
 }

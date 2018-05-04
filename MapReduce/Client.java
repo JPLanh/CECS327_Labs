@@ -29,6 +29,7 @@ public class Client
 	*/
     public Client(int p) throws Exception {
         dfs = new DFS(p);
+        if (p != 2332) dfs.join("localhost", 2332);
         while(running){
             System.out.println("-=Welcome to the BHJ Distributed File System=-\n");
             System.out.print("(enter \"Help\" for assistance): ");
@@ -50,14 +51,12 @@ public class Client
                     System.out.printf("%1$-10s %2$-25s %3$-30s\n", "Head", "{file name}", "Prints out the head of the file");
 					System.out.printf("%1$-10s %2$-25s %3$-30s\n", "Tail", "{file name}", "Prints out the tail of the file");
 					System.out.printf("%1$-10s %2$-25s %3$-30s\n\n\n", "Get", "{file name}", "Download the specified file from the DFS");
-					System.out.printf("%1$-10s %2$-25s %3$-30s\n\n\n", "Red", "None", "Execute map reduction");
+					System.out.printf("%1$-10s %2$-25s %3$-30s\n\n\n", "MR", "{file name}", "Execute map reduction on a file");
 					
                 } else if (input[0].toLowerCase().equals("ls")){
                     System.out.println(dfs.ls());
-                } else if (input[0].toLowerCase().equals("maps")){
-                    dfs.getMaps();
                 } else if (input[0].toLowerCase().equals("finger")){
-                    dfs.printFingers();
+                    dfs.printTree();
                 } else if (input[0].toLowerCase().equals("exit")){
                     running = false;
                     System.exit(0);
@@ -75,7 +74,7 @@ public class Client
 					}	else {
 							System.out.println(Arrays.toString(dfs.head(input[1])));
 					}
-                } else if (input[0].toLowerCase().equals("red")){
+                } else if (input[0].toLowerCase().equals("mr")){
                     dfs.runMapReduce(input[1]);
                 } else if (input[0].toLowerCase().equals("touch")){
                     try{
@@ -165,6 +164,6 @@ public class Client
 
         Client client=new Client( Integer.parseInt(args[0]));
        
-        //Client client = new Client(23245);
+//        Client client = new Client(23245);
     } 
 }
