@@ -29,6 +29,7 @@ public class Client
 	*/
     public Client(int p) throws Exception {
         dfs = new DFS(p);
+        if (p != 2332) dfs.join("localhost", 2332);
         while(running){
             System.out.println("-=Welcome to the BHJ Distributed File System=-\n");
             System.out.print("(enter \"Help\" for assistance): ");
@@ -163,6 +164,6 @@ public class Client
 
         Client client=new Client( Integer.parseInt(args[0]));
        
-        //Client client = new Client(23245);
+//        Client client = new Client(23245);
     } 
 }

@@ -1,3 +1,5 @@
+
+
 import javax.json.*;
 
 import java.io.*;
@@ -274,7 +276,7 @@ public class DFS
      * @return the byte of array for a segment of the file
      * @throws Exception
      */
-    public byte[] read(String fileName, int pageNumber) throws Exception
+    public byte[] read(String fileName, int pageNumber) throws Exception, RemoteException
     {   
         JsonArray metaReader =  getMetaData();
         for ( int i = 0 ; i < metaReader.size(); i++){
@@ -288,9 +290,9 @@ public class DFS
 
                             InputStream is = null;
                             try{
-                            long guid = md5("Metadata");
-                            ChordMessageInterface peer = chord.locateSuccessor(guid);
-                            is = peer.get(guidGet);
+                                long guid = md5("Metadata");
+                                ChordMessageInterface peer = chord.locateSuccessor(guid);
+                                is = peer.get(guidGet);
                             } catch (RemoteException e){
                                 System.out.println("Not on host, looking in other peers");
                                 ChordMessageInterface peer = chord.locateSuccessor(guidGet);
@@ -636,6 +638,9 @@ public class DFS
         chord.printFinger();
     }
 
+    public void printTree() throws RemoteException{
+        chord.printTree();
+    }
     public void constructReduceMeta(String fileName, ChordMessageInterface initial, ChordMessageInterface current) throws Exception{
         if (initial.getId() == current.getId()){
             TreeMap<Long, String> tempTReduceMap = current.getPreReduce();
@@ -659,7 +664,7 @@ public class DFS
                 localAppend(fileName + "_reduce", mapCompile.getBytes(), guidTemp);                        
                 current.put(guidTemp, new FileStream( mapCompile.getBytes()));
             }
-            
+
             System.out.println("Reduce Metadata information has been compiled");
         } else {
             TreeMap<Long, String> tempTReduceMap = current.getPreReduce();
@@ -697,7 +702,7 @@ public class DFS
 
                 Thread mappingThread = new Thread(){
                     public void run(){
-                        System.out.println("Initializing mapping sequences");
+                        //                System.out.println("Initializing mapping sequences");
                         ChordMessageInterface peer = null;
                         for (int j = 0; j < getJsonPage.size(); j++){     
                             long  guidGet = getJsonPage.get(j).asJsonObject().getJsonNumber("guid").longValue();
@@ -711,19 +716,23 @@ public class DFS
                         }     
                         try {
                             sleep(1000);
-                            while(!chord.isPhaseCompleted());
+                            while(!chord.isPhaseCompleted()){
+                            	System.out.print("");
+                            	//System.out.println(chord.set.size());
+                            }
+//                            chord.printTree();
                             System.out.println("Mapping sequences completed, now starting reducing sequence");
-                            chord.reduceContext(peer.getId(), mapReduce, chord);
+                            chord.reduceContext(peer.getSuccessor().getId(), mapReduce, peer);
                         } catch (RemoteException e) {
                             // TODO Auto-generated catch block
                             e.printStackTrace();
-                        } catch (InterruptedException e1) {
+                        } catch (InterruptedException e) {
                             // TODO Auto-generated catch block
-                            e1.printStackTrace();
+                            e.printStackTrace();
                         }         
                         try {
                             sleep(1000);
-                            while(!chord.isPhaseCompleted());
+                            while(!peer.isPhaseCompleted());
                             System.out.println("Now constructing metadata");
                             touch(fileName + "_reduce");
                             constructReduceMeta(fileName, chord, chord.getSuccessor());
@@ -739,11 +748,9 @@ public class DFS
                         }             
                     }
                 };
-
+                //
                 mappingThread.start();
-                ;            
             }
         }
-
     }
 }
