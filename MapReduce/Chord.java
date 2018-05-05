@@ -39,7 +39,6 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
             return (key > key1 || key < key2);
     }
 
-
     public void put(long guidObject, InputStream stream) throws RemoteException {
         try {
             String fileName = "./"+guid+"/repository/" + guidObject;
@@ -53,13 +52,10 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
         }
     }
 
-
     public InputStream get(long guidObject) throws RemoteException {
         FileStream file = null;
         try {
-        	ChordMessageInterface peer = locateSuccessor(guidObject);
-        	System.out.println(guidObject + " at " + peer.getId());
-            file = new FileStream("./"+peer.getId()+"/repository/" + guidObject);
+            file = new FileStream("./"+guid+"/repository/" + guidObject);
         } catch (IOException e)
         {
             throw(new RemoteException("File does not exists"));
@@ -306,53 +302,52 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
         return set.isEmpty();
     }
 
-    public void printFinger() throws RemoteException{
-        System.out.println("Predecessor: " + predecessor.getId());
-        System.out.println("sucessor: " + successor.getId());
-    }
-
-    public void printTree() throws RemoteException{
-        System.out.println(PreBReduceTreeMap.keySet());
-        System.out.println(SucBReduceTreeMap.keySet());
-    }
+    /** Goes through each node and have it runs the reduceContext, Reducing their BMap
+     * @param Source Who started the recursion so it can stop when it reaches itself
+     * @param reducer the reducer class to perform either map or reduce
+     * @param the node performing the process. Provide flexability so anyone can make this done it's work properly
+     */
     public void reduceContext(Long source, MapReduceInterface reducer,
             ChordMessageInterface context) throws RemoteException{
-    	System.out.println(source + " | " + guid);
         if (source != guid){
             successor.reduceContext(source, reducer, context);
         }
-//        setWorkingPeer(context.getId());
-//        System.out.println(context.getId());?
+        context.setWorkingPeer(source);
         Thread mappingThread = new Thread(){
             public void run(){
                 Set<Long> setOfKeys = BMap.keySet();
-//                System.out.println("set of keys: " + BMap.size());
-//                System.out.println("Reduce Test: " + guid);
                 try{
                     for (Long key : setOfKeys){
-//                System.out.println(setOfKeys);
                         List<String> getList = BMap.get(key);
-//                        System.out.println(key);
                         reducer.reduce(key, getList, context);
-//                        System.out.println(setOfKeys);
                     }
                 } catch (Exception e){
                     e.printStackTrace();
                 }
-//                    completePeer(context.getId(), 1);
+                    try {
+                        completePeer(source, 1);
+                    } catch (RemoteException e) {
+                        // TODO Auto-generated catch block
+                        e.printStackTrace();
+                    }
             }
         };        
         mappingThread.start();
 
     }
 
+    /** Reads a page and send the content to the mapper so it can map the word to their right key
+     * @param page The page to be read
+     * @param reducer the reducer class to perform either map or reduce
+     * @param the node performing the process. Provide flexability so anyone can make this done it's work properly
+     */
     public void mapContext(Long page, MapReduceInterface reducer,
             ChordMessageInterface context) throws RemoteException{
-        setWorkingPeer(page);
 
         Thread mappingThread = new Thread(){
             public void run(){
                 try {
+                    context.setWorkingPeer(page);
                     InputStream is = context.get(page);
                     ByteArrayOutputStream byteBuffer = new ByteArrayOutputStream();
                     int nRead = is.read();
@@ -365,8 +360,6 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
                     byte[] readByte = new byte[1024];
                     readByte = byteBuffer.toByteArray();
                     reducer.map(page, new String(readByte), context);   
-                    completePeer(page, 1);
-                    System.out.println("Mapping complete");
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -375,8 +368,10 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
         mappingThread.start();
     }
 
-
-
+    /** Check to see if the key lies either before or after the node, if not it will be passed to the next node
+     * @param key the key to be compared between the two nodes
+     * @param value the value of the key
+     */
     public void emitMap(long key, String value)  throws RemoteException{
         if (isKeyInOpenInterval(key, predecessor.getId(), successor.getId())){
             List<String> tempList = BMap.get(key);
@@ -389,6 +384,10 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
         }
     }
 
+    /** The key will check to see if it falls before the guid or after the guid
+     * @param key the key to be compared between the two nodes
+     * @param value the value of the key
+     */
     public void emitReduce(long key, String value) throws RemoteException{
         if(isKeyInOpenInterval(key, predecessor.getId(), successor.getId())){
             if (isKeyInOpenInterval(key, predecessor.getId(), guid)) {
@@ -403,9 +402,16 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
         }
     }
 
+    /** If the reducing process created two set of the distribution, it will give the predecessor's to the current node portion
+     * @return the treemap containing the predecessor's portion.
+     */
     public TreeMap<Long, String> getPreReduce()  throws RemoteException{
         return PreBReduceTreeMap;
     }
+
+    /** If the reducing process created two set of the distribution, it will give the successor's to the current node portion
+     * @return the treemap containing the successor's portion.
+     */
     public TreeMap<Long, String> getSucReduce()  throws RemoteException{
         return SucBReduceTreeMap;
     }

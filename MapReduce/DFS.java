@@ -1,5 +1,3 @@
-
-
 import javax.json.*;
 
 import java.io.*;
@@ -56,7 +54,6 @@ public class DFS
             writeMetaData(getNewMeta.build().toString());   
         }
     }
-
 
     /** Connect to the desired destination through a certain port
      * @Ip The destination
@@ -134,7 +131,6 @@ public class DFS
         writeMetaData(getNewMeta.build().toString());        
 
     }
-
 
     /** Gather all files
      * @return a string of all files
@@ -238,7 +234,6 @@ public class DFS
         writeMetaData(getNewMeta.build().toString());        
     }
 
-
     /** Read the small byte of data from the peer in according to it's page number.
      * 
      * @param fileName The file that wants to be read
@@ -268,7 +263,6 @@ public class DFS
         return null;
     }
 
-
     /** Read the small byte of data from the peer in according to it's page number.
      * 
      * @param fileName The file that wants to be read
@@ -276,7 +270,7 @@ public class DFS
      * @return the byte of array for a segment of the file
      * @throws Exception
      */
-    public byte[] read(String fileName, int pageNumber) throws Exception, RemoteException
+    public byte[] read(String fileName, int pageNumber) throws Exception
     {   
         JsonArray metaReader =  getMetaData();
         for ( int i = 0 ; i < metaReader.size(); i++){
@@ -331,7 +325,6 @@ public class DFS
         return null;
     }
 
-
     /** Reads the last page of the file
      * 
      * @param fileName The file that we wants to read
@@ -353,7 +346,6 @@ public class DFS
     {
         return read(fileName, 0);
     }
-
 
     /** Appends a new page to a file with the following bytes
      * 
@@ -515,7 +507,6 @@ public class DFS
 
     }
 
-
     /** Add in new pages to the file in the metadata, first by creating a new page
      * (touch) and them rum it again appending the data and info in
      * DEPRECIATED... not really needed and i was thinking way too much on this
@@ -634,13 +625,12 @@ public class DFS
         return metaReader;    
     }
 
-    public void printFingers() throws RemoteException{
-        chord.printFinger();
-    }
-
-    public void printTree() throws RemoteException{
-        chord.printTree();
-    }
+    /** Construct the files pertaining the mapReduced phase and modify the metadata to reflect the construction of mapReduce
+     * @param fileName The file to be mapped and reduce
+     * @param initial The initial process, or where the recursion should end 
+     * @param current The current iteration of the recursion
+     * @throws Exception
+     */
     public void constructReduceMeta(String fileName, ChordMessageInterface initial, ChordMessageInterface current) throws Exception{
         if (initial.getId() == current.getId()){
             TreeMap<Long, String> tempTReduceMap = current.getPreReduce();
@@ -692,6 +682,10 @@ public class DFS
         }        
     }
 
+    /** Start the map reduce process of a particular file.
+     * @param fileName The file to be mapped and reduced
+     * @throws Exception
+     */
     public void runMapReduce(String fileName) throws Exception{
         Mapper mapReduce = new Mapper();
 
@@ -699,10 +693,8 @@ public class DFS
         for ( int i = 0 ; i < metaReader.size(); i++){
             if(metaReader.getJsonObject(i).getJsonObject("file").getJsonString("name").toString().replaceAll("\"", "").equals(fileName)){
                 JsonArray getJsonPage = metaReader.getJsonObject(i).getJsonObject("file").getJsonArray("page");
-
                 Thread mappingThread = new Thread(){
                     public void run(){
-                        //                System.out.println("Initializing mapping sequences");
                         ChordMessageInterface peer = null;
                         for (int j = 0; j < getJsonPage.size(); j++){     
                             long  guidGet = getJsonPage.get(j).asJsonObject().getJsonNumber("guid").longValue();
@@ -716,13 +708,9 @@ public class DFS
                         }     
                         try {
                             sleep(1000);
-                            while(!chord.isPhaseCompleted()){
-                            	System.out.print("");
-                            	//System.out.println(chord.set.size());
-                            }
-//                            chord.printTree();
+                            while(!peer.isPhaseCompleted());                           
                             System.out.println("Mapping sequences completed, now starting reducing sequence");
-                            chord.reduceContext(peer.getSuccessor().getId(), mapReduce, peer);
+                            chord.getSuccessor().reduceContext(chord.getId(), mapReduce, peer);
                         } catch (RemoteException e) {
                             // TODO Auto-generated catch block
                             e.printStackTrace();
@@ -748,7 +736,6 @@ public class DFS
                         }             
                     }
                 };
-                //
                 mappingThread.start();
             }
         }
