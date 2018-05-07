@@ -214,15 +214,15 @@ public class DFS
         JsonArrayBuilder newFileMeta = Json.createArrayBuilder();
         for (int i = 0; i < metaReader.size();i++){
             JsonObject getJson = metaReader.getJsonObject(i).getJsonObject("file");
-            if (getJson.getJsonString("name").toString().replaceAll("\"", "").equals(fileName)){
+            if (getJson.getJsonString("name").toString().replaceAll("\"", "").equals(fileName)) {
                 JsonArray getJsonPages = getJson.getJsonArray("page");
                 for (int j = 0; j < getJsonPages.size(); j++){
                     JsonObject tempPage = getJsonPages.getJsonObject(j);
-                    long guid = md5("Metadata");
                     long guidPage = tempPage.getJsonNumber("guid").longValue();
 
-                    ChordMessageInterface peer = chord.locateSuccessor(guid);
+                    ChordMessageInterface peer = chord.locateSuccessor(guidPage);
                     peer.delete(guidPage);
+                    System.out.println("Peer: " + peer.getId() + " [ " + String.valueOf(guidPage) + " ] ");
 
                 }
             } else {                            
@@ -243,9 +243,6 @@ public class DFS
      */
     public byte[] read(String fileName, long guidGet) throws Exception
     {   
-        JsonArray metaReader =  getMetaData();
-        for ( int i = 0 ; i < metaReader.size(); i++){
-            JsonObject getJson = metaReader.getJsonObject(i).getJsonObject("file");
             ChordMessageInterface peer = chord.locateSuccessor(guidGet);
             InputStream is = peer.get(guidGet);
 
@@ -258,9 +255,6 @@ public class DFS
             byteBuffer.flush();
             is.close();
             return byteBuffer.toByteArray();
-        }
-
-        return null;
     }
 
     /** Read the small byte of data from the peer in according to it's page number.
@@ -284,9 +278,10 @@ public class DFS
 
                             InputStream is = null;
                             try{
-                                long guid = md5("Metadata");
-                                ChordMessageInterface peer = chord.locateSuccessor(guid);
+//                                long guid = md5(guidGet);
+                                ChordMessageInterface peer = chord.locateSuccessor(guidGet);
                                 is = peer.get(guidGet);
+//                                System.out.println("Chord: " + peer.getId() + " [ " + guidGet);
                             } catch (RemoteException e){
                                 System.out.println("Not on host, looking in other peers");
                                 ChordMessageInterface peer = chord.locateSuccessor(guidGet);

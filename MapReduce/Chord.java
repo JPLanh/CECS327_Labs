@@ -23,6 +23,12 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
     public TreeMap<Long, List<String>> BMap;
 
 
+    /** Make sure the key belong within the interval and exactly on the chord
+     * @param key the guid to be compared between the two keys
+     * @param key1 the beginning guid
+     * @param key2 the end guid
+     * @return if the guid belong between the two key
+     */
     public Boolean isKeyInSemiCloseInterval(long key, long key1, long key2)
     {
         if (key1 < key2)
@@ -31,6 +37,12 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
             return (key > key1 || key <= key2);
     }
 
+    /** Make sure the key belong within the interval but not exactly on the chord
+     * @param key the guid to be compared between the two keys
+     * @param key1 the beginning guid
+     * @param key2 the end guid
+     * @return if the guid belong between the two key
+     */
     public Boolean isKeyInOpenInterval(long key, long key1, long key2)
     {
         if (key1 < key2)
@@ -39,6 +51,10 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
             return (key > key1 || key < key2);
     }
 
+    /** Put a file into the repository of the chord
+     * @param guidObject the guid to put into the chord
+     * @param stream the inputstream cooresponding to the guid of the file
+     */
     public void put(long guidObject, InputStream stream) throws RemoteException {
         try {
             String fileName = "./"+guid+"/repository/" + guidObject;
@@ -52,6 +68,10 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
         }
     }
 
+    /** Read the InputStream from a page or guid if you will
+     * @param the guid of the page
+     * @return InputStream of the page that has been read
+     */
     public InputStream get(long guidObject) throws RemoteException {
         FileStream file = null;
         try {
@@ -63,25 +83,45 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
         return file;
     }
 
+    /** Delete the file within the chord
+     *  @param the guid of the file to be deleted
+     */
     public void delete(long guidObject) throws RemoteException {
         File file = new File("./"+guid+"/repository/" + guidObject);
         file.delete();
     }
 
+    /** Get the ID of the chord
+     *  @return the ID of the chord
+     */
     public long getId() throws RemoteException {
         return guid;
     }
-    public boolean isAlive() throws RemoteException {
+
+    /** Just to make sure that the chord is being responsive, or acknowledging
+     * 
+     */
+   public boolean isAlive() throws RemoteException {
         return true;
     }
 
+    /** Get the predecessor for the current chord
+     * @return the predecessor for the current cord
+     */
     public ChordMessageInterface getPredecessor() throws RemoteException {
         return predecessor;
     }
 
+    /** Get the successor for the current chord
+     * @return the successor
+     */
     public ChordMessageInterface getSuccessor() throws RemoteException{
         return successor;
     }
+
+    /** Error here, there's inconsistencies with locating if the key is within a successor.
+     * 
+     */
     public ChordMessageInterface locateSuccessor(long key) throws RemoteException {
         if (key == guid)
             throw new IllegalArgumentException("Key must be distinct that  " + guid);
@@ -98,6 +138,10 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
         return successor;
     }
 
+    /** Find the closest preceding node
+     * @param key find the closest node according to the key
+     * @return the closest preceding node
+     */
     public ChordMessageInterface closestPrecedingNode(long key) throws RemoteException {
         // todo
         if(key != guid) {
@@ -123,6 +167,10 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
         return successor;
     }
 
+    /** Allows a chord to join the ring, or the distributed file system with the port given and IP
+     * @Param ip The destination for the chord to join
+     * @param port the port that the chord are to join in.
+     */
     public void joinRing(String ip, int port)  throws RemoteException {
         try{
             System.out.println("Get Registry to joining ring");
@@ -137,6 +185,9 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
         }   
     }
 
+    /** Find the next successors
+     * 
+     */
     public void findingNextSuccessor()
     {
         int i;
@@ -157,6 +208,9 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
         }
     }
 
+    /** Stablize it's successor so that way it can be a loop.
+     * 
+     */
     public void stabilize() {
         try {
             if (successor != null)
@@ -178,6 +232,9 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
         }
     }
 
+    /** Unknown
+     * 
+     */
     public void notify(ChordMessageInterface j) throws RemoteException {
         if (predecessor == null || (predecessor != null
                 && isKeyInOpenInterval(j.getId(), predecessor.getId(), guid)))
@@ -200,6 +257,9 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
 
     }
 
+    /** Supposibly fix the fingers for a node after a new joins so that way it knows whos in the ring
+     * 
+     */
     public void fixFingers() {
 
         long id= guid;
@@ -217,6 +277,9 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
         }
     }
 
+    /** Check to see if the predecessor has already been determined
+     * 
+     */
     public void checkPredecessor() { 	
         try {
             if (predecessor != null && !predecessor.isAlive())
@@ -229,6 +292,12 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
         }
     }
 
+    /** Constructor for the chord
+     * 
+     * @param port The port that the chord will be connecting to
+     * @param guid The guid of the chord
+     * @throws RemoteException
+     */
     public Chord(int port, long guid) throws RemoteException {
 
         PreBReduceTreeMap = new  TreeMap<Long, String>();
@@ -263,6 +332,9 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
         } 
     }
 
+    /** Print some information about the current chord
+     * 
+     */
     void Print()
     {   
         int i;
@@ -287,16 +359,25 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
         }
     }
 
+    /** Increment the set by 1 when a peer is tasked to do some work.                                      
+     * 
+     */
     public void setWorkingPeer(Long page)  throws RemoteException{
         set.add(page);
     }
 
+    /** Reduce the set by 1 when a peer is completed with it's page
+     * 
+     */
     public void completePeer(Long page, int i) throws RemoteException
     {
         this.numOfRecord += i;
         set.remove(page);
     }
 
+    /** Check to see if the peer completed their process by seeing if the set is empty
+     * @return if the set is empty
+     */
     public boolean isPhaseCompleted() throws RemoteException{
 
         return set.isEmpty();
