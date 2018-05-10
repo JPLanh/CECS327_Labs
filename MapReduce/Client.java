@@ -29,7 +29,7 @@ public class Client
 	*/
     public Client(int p) throws Exception {
         dfs = new DFS(p);
-//        if (p != 2332) dfs.join("localhost", 2332);
+        if (p != 2332) dfs.join("localhost", 2332);
         while(running){
             System.out.println("-=Welcome to the BHJ Distributed File System=-\n");
             System.out.print("(enter \"Help\" for assistance): ");
@@ -58,7 +58,9 @@ public class Client
                 } else if (input[0].toLowerCase().equals("exit")){
                     running = false;
                     System.exit(0);
-                }else {
+                } else if (input[0].toLowerCase().equals("sur")){
+                    dfs.surround();
+                } else {
                     System.out.println("Invalid Command");
                 }
             } else if (input.length == 2){

@@ -278,8 +278,8 @@ public class DFS
 
                             InputStream is = null;
                             try{
-//                                long guid = md5(guidGet);
-                                ChordMessageInterface peer = chord.locateSuccessor(guidGet);
+                                long guid = md5("Metadata");
+                                ChordMessageInterface peer = chord.locateSuccessor(guid);
                                 is = peer.get(guidGet);
 //                                System.out.println("Chord: " + peer.getId() + " [ " + guidGet);
                             } catch (RemoteException e){
@@ -626,56 +626,104 @@ public class DFS
      * @param current The current iteration of the recursion
      * @throws Exception
      */
-    public void constructReduceMeta(String fileName, ChordMessageInterface initial, ChordMessageInterface current) throws Exception{
-        if (initial.getId() == current.getId()){
-            TreeMap<Long, String> tempTReduceMap = current.getPreReduce();
-            String mapCompile = "";
-            for (Long getLong : tempTReduceMap.keySet()){
-                mapCompile = mapCompile.concat(getLong + ": " + tempTReduceMap.get(getLong) +"\n");
-            }
-            if (mapCompile.length() != 0){
-                long guidTemp = md5(fileName + current.getId() + "pre");
-                localAppend(fileName + "_reduce", mapCompile.getBytes(), guidTemp);                        
-                current.put(guidTemp, new FileStream( mapCompile.getBytes()));
-            }
+  public void constructReduceMeta(String fileName) throws Exception{
+	  ArrayList<ChordMessageInterface> listSet = MRHelper(chord.getSuccessor(), new ArrayList<ChordMessageInterface>());
+	  while(!listSet.isEmpty()){
+		  ChordMessageInterface lowestNum = listSet.get(0);
+		  for (int i = 0; i < listSet.size(); i++){
+			  if (listSet.get(i).getId() < lowestNum.getId()){
+				  lowestNum = listSet.get(i);
+			  }			  
+		  }
+		listSet.remove(lowestNum);
+        long guidTemp = lowestNum.getId() + md5(fileName + lowestNum.getId())%1000;
+        localAppend(fileName + "_reduce", lowestNum.getReduceMap().toString().getBytes(), guidTemp);                        
+        lowestNum.put(guidTemp, new FileStream(lowestNum.getReduceMap().toString().getBytes()));
+		  
+	  }
+//	  if (chord.getReduceMap().firstKey() < lowest){
+//		  constructReduceMeta(fileName, chord.getReduceMap().firstKey());
+//	  } else if (chord.getReduceMap().firstKey() > lowest){
+//		  constructReduceMeta(fileName, lowest);
+//	  } else {
+//            long guidTemp = md5(fileName + current.getId() + "suc");
+//            long guidTemp = chord.getId() + md5(fileName + chord.getId())%1000;
+//            localAppend(fileName + "_reduce", chord.getReduceMap().toString().getBytes(), guidTemp);                        
+//            chord.put(guidTemp, new FileStream(chord.getReduceMap().toString().getBytes()));          
+//	  }
+  }
+  
+  public ArrayList<ChordMessageInterface> MRHelper(ChordMessageInterface initial, ArrayList<ChordMessageInterface> listSet) throws RemoteException{
+	  if (listSet.contains(initial)){
+//	      listSet.remove(initial);
+		return listSet;  
+	  } else {
+		  listSet.add(initial);
+		  System.out.println("List add: " + initial.getId());
+		  return MRHelper(initial.getSuccessor(), listSet);
+	  }
+  }
+  
+//  public TreeMap<ChordMessageInterface, TreeMap<Long, String>> constructReduceMetaHelper(ChordMessageInterface initial, ChordMessageInterface current, TreeMap<ChordMessageInterface, TreeMap<Long, String>> mappedGet) throws RemoteException{
+//      if (initial.getId() == current.getId()){
+//          System.out.println(current.getReduceMap());
+//          mappedGet.put(current, current.getReduceMap());
+//          return mappedGet;
+//      } else {
+//          System.out.println(current.getReduceMap());
+//          mappedGet.put(current, current.getReduceMap());
+//          return constructReduceMetaHelper(current, current.getSuccessor(), mappedGet);
+//      }
+//  }
+  
+  public void surround() throws RemoteException{
+      chord.whois();
+  }
 
-            tempTReduceMap = current.getSucReduce();
-            mapCompile = "";
-            for (Long getLong : tempTReduceMap.keySet()){
-                mapCompile = mapCompile.concat(getLong + ": " + tempTReduceMap.get(getLong) +"\n");
-            }
-            if (mapCompile.length() != 0){
-                long guidTemp = md5(fileName + current.getId() + "suc");
-                localAppend(fileName + "_reduce", mapCompile.getBytes(), guidTemp);                        
-                current.put(guidTemp, new FileStream( mapCompile.getBytes()));
-            }
-
-            System.out.println("Reduce Metadata information has been compiled");
-        } else {
-            TreeMap<Long, String> tempTReduceMap = current.getPreReduce();
-            String mapCompile = "";
-            for (Long getLong : tempTReduceMap.keySet()){
-                mapCompile = mapCompile.concat(getLong + ": " + tempTReduceMap.get(getLong) +"\n");
-            }
-            if (mapCompile.length() != 0){
-                long guidTemp = md5(fileName + current.getId() + "pre");
-                localAppend(fileName + "_reduce", mapCompile.getBytes(), guidTemp);                        
-                current.put(guidTemp, new FileStream( mapCompile.getBytes()));
-            }
-
-            tempTReduceMap = current.getSucReduce();
-            mapCompile = "";
-            for (Long getLong : tempTReduceMap.keySet()){
-                mapCompile = mapCompile.concat(getLong + ": " + tempTReduceMap.get(getLong) +"\n");
-            }
-            if (mapCompile.length() != 0){
-                long guidTemp = md5(fileName + current.getId() + "suc");
-                localAppend(fileName + "_reduce", mapCompile.getBytes(), guidTemp);                        
-                current.put(guidTemp, new FileStream( mapCompile.getBytes()));
-            }
-            constructReduceMeta(fileName, initial, current.getSuccessor());
-        }        
-    }
+//    public void constructReduceMeta(String fileName, ChordMessageInterface initial, ChordMessageInterface current) throws Exception{
+//        if (initial.getId() == current.getId()){
+//            TreeMap<Long, String> tempTReduceMap = current.getRe
+//            mapCompile = "";
+//            for (Long getLong : tempTReduceMap.keySet()){
+//                mapCompile = mapCompile.concat(getLong + ": " + tempTReduceMap.get(getLong) +"\n");
+//            }
+//            if (mapCompile.length() != 0){
+////                long guidTemp = md5(fileName + current.getId() + "suc");
+//                long guidTemp = current.getId() + md5(fileName + current.getId() + "suc")%1000;
+//                localAppend(fileName + "_reduce", mapCompile.getBytes(), guidTemp);                        
+//                current.put(guidTemp, new FileStream( mapCompile.getBytes()));
+//            }
+//
+//            System.out.println("Reduce Metadata information has been compiled");
+//        } else {
+//            TreeMap<Long, String> tempTReduceMap = current.getPreReduce();
+//            String mapCompile = "";
+//            for (Long getLong : tempTReduceMap.keySet()){
+//                mapCompile = mapCompile.concat(getLong + ": " + tempTReduceMap.get(getLong) +"\n");
+//            }
+//            if (mapCompile.length() != 0){
+////                long guidTemp = md5(fileName + current.getId() + "pre");
+//                long guidTemp = current.getId() + md5(fileName + current.getId() + "pre")%1000;
+//                localAppend(fileName + "_reduce", mapCompile.getBytes(), guidTemp);                        
+//                current.put(guidTemp, new FileStream( mapCompile.getBytes()));
+//            }
+//
+//            tempTReduceMap = current.getSucReduce();
+//            mapCompile = "";
+//            for (Long getLong : tempTReduceMap.keySet()){
+//                mapCompile = mapCompile.concat(getLong + ": " + tempTReduceMap.get(getLong) +"\n");
+//            }
+//            if (mapCompile.length() != 0){
+////                long guidTemp = md5(fileName + current.getId() + "suc");
+//
+//                long guidTemp = current.getId() + md5(fileName + current.getId() + "suc")%1000;
+//                localAppend(fileName + "_reduce", mapCompile.getBytes(), guidTemp);                        
+////                current.put(guidTemp, new FileStream( mapCompile.getBytes()));                        
+//              current.put(guidTemp, new FileStream( tempTReduceMap.toString().getBytes()));
+//            }
+//            constructReduceMeta(fileName, initial, current.getSuccessor());
+//        }        
+//    }
 
     /** Start the map reduce process of a particular file.
      * @param fileName The file to be mapped and reduced
@@ -702,23 +750,31 @@ public class DFS
                             }
                         }     
                         try {
-                            sleep(1000);
-                            while(!peer.isPhaseCompleted());                           
+                            sleep(5000);
+                            while(!peer.isPhaseCompleted());          
+//                            peer.getSuccessor().printAllMap(peer);
                             System.out.println("Mapping sequences completed, now starting reducing sequence");
-                            chord.getSuccessor().reduceContext(chord.getId(), mapReduce, peer);
+                            touch(fileName + "_reduce");
+//                            chord.reduceContext(peer.getSuccessor().getId(), mapReduce, peer);
+                            peer.getSuccessor().reduceContext(mapReduce, peer);
+
                         } catch (RemoteException e) {
                             // TODO Auto-generated catch block
                             e.printStackTrace();
                         } catch (InterruptedException e) {
                             // TODO Auto-generated catch block
                             e.printStackTrace();
-                        }         
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
                         try {
                             sleep(1000);
-                            while(!peer.isPhaseCompleted());
+                            while(!peer.isPhaseCompleted());   
+//                            peer.getSuccessor().printAllReduce(peer);
                             System.out.println("Now constructing metadata");
-                            touch(fileName + "_reduce");
-                            constructReduceMeta(fileName, chord, chord.getSuccessor());
+//                            touch(fileName + "_reduce");
+                            constructReduceMeta(fileName);
+//                            constructReduceMeta(fileName, chord, chord.getSuccessor());
                         } catch (IOException e) {
                             // TODO Auto-generated catch block
                             e.printStackTrace();

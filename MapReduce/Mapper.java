@@ -29,6 +29,7 @@ public class Mapper implements MapReduceInterface, Serializable {
      * @param the chord that is currently doing the distribution of the word
      */
 	public void reduce(Long key, List<String> values, ChordMessageInterface context) throws IOException{
+//		System.out.println(context.getId() + ": " + key);
 		context.emitReduce(key, values.get(0).substring(0,values.get(0).indexOf(':')) +":"+values.size());		
 	}
 

@@ -25,11 +25,16 @@ public interface ChordMessageInterface extends Remote
     public void completePeer(Long page, int n) throws RemoteException;
     public boolean isPhaseCompleted() throws RemoteException;
     
-    public void reduceContext(Long source, MapReduceInterface reducer,
+//    public void reduceContext(Long source, MapReduceInterface reducer,
+//            ChordMessageInterface context) throws RemoteException;
+    public void reduceContext(MapReduceInterface reducer,
             ChordMessageInterface context) throws RemoteException;
     public void mapContext(Long page, MapReduceInterface mapper,
             ChordMessageInterface context) throws RemoteException;
     
-    public TreeMap<Long, String> getPreReduce() throws RemoteException;
-    public TreeMap<Long, String> getSucReduce() throws RemoteException;
+    public void whois() throws RemoteException;
+    public void printAllMap(ChordMessageInterface initial) throws RemoteException;
+    public void printAllReduce(ChordMessageInterface initial) throws RemoteException;
+    public TreeMap<Long, String> getReduceMap() throws RemoteException;
+//    public TreeMap<Long, String> getSucReduce() throws RemoteException;
 }
