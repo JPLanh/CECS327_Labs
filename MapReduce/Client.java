@@ -6,15 +6,12 @@ import java.util.Scanner;
 import java.util.Arrays;
 
 /*!
-	@files	Client.java, DFS.Java
+	@files	Client.java, DFS.Java, Chord.java, ChordMessageInterface.java, FileStream.java, Mapper.java, MapReduceInterface.java
 	@author	Bryson Sherman, Hung Mach, Jimmy Lanh
-	@date	4/3/2018
+	@date	5/10/2018
 	@version 1.0
-	Creators: Bryson Sherman
-			  Hung Mach
-			  Jimmy Lanh
 
-	Due Date: 4/3/2018
+	Due Date: 5/10/2018
 
  */
 
