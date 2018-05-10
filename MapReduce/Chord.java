@@ -383,11 +383,6 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
         return set.isEmpty();
     }
 
-	/**
-	* sees who is the process we are on. prints predecessor and successor
-	*
-	*
-	*/
     public void whois() throws RemoteException{
         System.out.println("Pre: " + getPredecessor().getId());
         System.out.println("Suc: " + getSuccessor().getId());
@@ -435,11 +430,6 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
 //
 //    }
 
-	/**
-	* reduce context thread
-	* @param reducer the map reduce interface
-	* @param context the chord context value
-	*/
     public void reduceContext(MapReduceInterface reducer,
             ChordMessageInterface context) throws RemoteException{
         if (context.getId() != guid){
@@ -509,11 +499,7 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
         };
         mappingThread.start();
     }
-	/**
-	* prints all the maps of the chord interface recursively
-	* @param initial the initial value of the chord
-	*
-	*/
+
     public void printAllMap(ChordMessageInterface initial) throws RemoteException{
         if (guid != initial.getId()){
             successor.printAllMap(initial);
@@ -521,11 +507,6 @@ public class Chord extends java.rmi.server.UnicastRemoteObject implements ChordM
         System.out.println(BMap);        
     }
 
-	/**
-	* prints all reduce of the cord interface recursively
-	* @param initial the initial value of the chord
-	*
-	*/
     public void printAllReduce(ChordMessageInterface initial) throws RemoteException{
         if (guid != initial.getId()){
             successor.printAllReduce(initial);

@@ -591,8 +591,8 @@ public class DFS
 
     /**Get the number of pages the file has 
      * 
-     * @param fileName the file name 
-     * @return the size of the file in an int
+     * @param fileName
+     * @return
      * @throws Exception
      */
     public int getSize(String fileName) throws Exception{
@@ -639,7 +639,7 @@ public class DFS
         long guidTemp = lowestNum.getId() + md5(fileName + lowestNum.getId())%1000;
         localAppend(fileName + "_reduce", lowestNum.getReduceMap().toString().getBytes(), guidTemp);                        
         lowestNum.put(guidTemp, new FileStream(lowestNum.getReduceMap().toString().getBytes()));
-		  
+		System.out.println("Everything is all done");
 	  }
 //	  if (chord.getReduceMap().firstKey() < lowest){
 //		  constructReduceMeta(fileName, chord.getReduceMap().firstKey());
@@ -659,7 +659,7 @@ public class DFS
 		return listSet;  
 	  } else {
 		  listSet.add(initial);
-		  System.out.println("List add: " + initial.getId());
+//		  System.out.println("List add: " + initial.getId());
 		  return MRHelper(initial.getSuccessor(), listSet);
 	  }
   }
