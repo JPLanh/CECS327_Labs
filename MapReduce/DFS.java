@@ -591,8 +591,8 @@ public class DFS
 
     /**Get the number of pages the file has 
      * 
-     * @param fileName
-     * @return
+     * @param fileName the file name 
+     * @return the size of the file in an int
      * @throws Exception
      */
     public int getSize(String fileName) throws Exception{
